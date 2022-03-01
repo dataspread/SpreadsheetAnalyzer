@@ -4,7 +4,7 @@ SheetAnalyzer is a library for analyzing the depenency and formula structure of 
 
 This branch is for TACO testing.
 
-The main code for dependency manangement is [here](https://github.com/dataspread/sheetanalyzer/tree/tacoTest/src/main/java/org/dataspread/sheetanalyzer/dependency)
+The main code for formula dependency manangement is [here](https://github.com/dataspread/sheetanalyzer/tree/tacoTest/src/main/java/org/dataspread/sheetanalyzer/dependency)
 
 TACO is also integrated into [Dataspread](https://github.com/dataspread/dataspread-web/tree/AsyncCompression)
 
