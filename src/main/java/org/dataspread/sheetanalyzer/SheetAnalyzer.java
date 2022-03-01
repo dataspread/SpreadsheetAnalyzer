@@ -38,12 +38,11 @@ public class SheetAnalyzer {
     }
 
     private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
-        boolean isRowWise = false;
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
             depGraph.setInRowCompression(inRowCompression);
             HashSet<Ref> refSet = new HashSet<>();
-            sheetData.getSortedDepPairs(isRowWise).forEach(depPair -> {
+            sheetData.getDepPairs().forEach(depPair -> {
                 if (inRowCompression) {
                     boolean inRowOnly = isInRowOnly(depPair);
                     depGraph.setDoCompression(inRowOnly);

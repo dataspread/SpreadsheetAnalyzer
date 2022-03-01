@@ -9,6 +9,7 @@ public class SheetData {
     private int maxRows;
     private int maxCols;
 
+    private final List<Ref> formulaCells = new LinkedList<>();
     private final HashMap<Ref, List<Ref>> sheetDeps = new HashMap<>();
     private final HashMap<Ref, Integer> formulaNumRefs = new HashMap<>();
     private final HashMap<Ref, CellContent> sheetContent = new HashMap<>();
@@ -22,27 +23,8 @@ public class SheetData {
         this.sheetName = sheetName;
     }
 
-    public static Comparator<Pair<Ref, List<Ref>>> rowWiseComp =
-            (pairA, pairB) -> {
-                Ref refA = pairA.first;
-                Ref refB = pairB.first;
-
-                int rowResult = Integer.compare(refA.getRow(), refB.getRow());
-                if (rowResult == 0) return Integer.compare(refA.getColumn(), refB.getColumn());
-                else return rowResult;
-            };
-
-    public static Comparator<Pair<Ref, List<Ref>>> colWiseComp =
-            (pairA, pairB) -> {
-                Ref refA = pairA.first;
-                Ref refB = pairB.first;
-
-                int colResult = Integer.compare(refA.getColumn(), refB.getColumn());
-                if (colResult == 0) return Integer.compare(refA.getRow(), refB.getRow());
-                else return colResult;
-            };
-
     public void addDeps(Ref dep, List<Ref> precList) {
+        formulaCells.add(dep);
         sheetDeps.put(dep, precList);
     }
 
@@ -62,13 +44,11 @@ public class SheetData {
         return accessAreaCache.contains(areaRef);
     }
 
-    public List<Pair<Ref, List<Ref>>> getSortedDepPairs(boolean rowWise) {
+    public List<Pair<Ref, List<Ref>>> getDepPairs() {
         LinkedList<Pair<Ref, List<Ref>>> depPairList = new LinkedList<>();
-        sheetDeps.forEach((Ref dep, List<Ref> precList) -> {
-            depPairList.add(new Pair<>(dep, precList));
+        formulaCells.forEach(formulaCell -> {
+            depPairList.add(new Pair<>(formulaCell, sheetDeps.get(formulaCell)));
         });
-        if (rowWise) depPairList.sort(rowWiseComp);
-        else depPairList.sort(colWiseComp);
         return depPairList;
     }
 

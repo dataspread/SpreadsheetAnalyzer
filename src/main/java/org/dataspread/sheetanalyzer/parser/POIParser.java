@@ -84,21 +84,32 @@ public class POIParser implements SpreadsheetParser {
         int maxRows = 0;
         int maxCols = 0;
         for (Row row : sheet) {
-            for (Cell cell : row) {
-                if (cell != null) {
-                    if (cell.getCellType() == CellType.FORMULA) {
-                        parseOneFormulaCell(sheetData, cell);
-                    } else {
-                        Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
-                        CellContent cellContent = new CellContent(getCellContentString(cell),
-                                "", false);
-                        sheetData.addContent(dep, cellContent);
-                    }
-                }
+            for (Cell cell : row)
                 if (cell.getColumnIndex() > maxCols) maxCols = cell.getColumnIndex();
-            }
             if (row.getRowNum() > maxRows) maxRows = row.getRowNum();
         }
+
+        for (int i = 0; i <= maxCols; i++) {
+            for (int j = 0; j <= maxRows; j++) {
+                Row row = sheet.getRow(j);
+                if (row != null) {
+                    Cell cell = row.getCell(i);
+                    if (cell != null) {
+                        if (cell.getCellType() == CellType.FORMULA) {
+                            parseOneFormulaCell(sheetData, cell);
+                        } else {
+                            Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
+                            CellContent cellContent = new CellContent(getCellContentString(cell),
+                                    "", false);
+                            sheetData.addContent(dep, cellContent);
+                        }
+                    }
+                }
+            }
+        }
+
+        sheetData.setMaxRowsCols(maxRows, maxCols);
+
         return sheetData;
     }
 
