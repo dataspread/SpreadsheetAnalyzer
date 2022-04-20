@@ -10,6 +10,7 @@ import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
 import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.data.CellContent;
+import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 
@@ -83,14 +84,23 @@ public class SheetAnalyzerImpl extends SheetAnalyzer {
     }
 
     @Override
-    public Map<String, Pair<Map<Ref, List<RefWithMeta>>,
-            Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
+    public Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getTACODepGraphs() {
         Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> tacoDepGraphs = new HashMap<>();
         this.depGraphMap.forEach((sheetName, depGraph) -> {
             tacoDepGraphs.put(sheetName,
                     ((DependencyGraphTACO) depGraph).getCompressedGraph());
         });
         return tacoDepGraphs;
+    }
+
+    @Override
+    public Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getNonOverlappingGraphs() {
+        Map<String, SheetData> sheetDataMap = this.parser.getSheetData();
+        this.depGraphMap.forEach((sheetName, depGraph) -> {
+            SheetData sheetData = sheetDataMap.get(sheetName);
+            ((DependencyGraphTACO) depGraph).pruneOverlappingRefs(sheetData);
+        });
+        return getTACODepGraphs();
     }
 
     /**

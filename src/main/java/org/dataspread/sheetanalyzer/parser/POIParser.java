@@ -117,8 +117,6 @@ public class POIParser implements SpreadsheetParser {
 
     private SheetData parseOneSheet(Sheet sheet) throws SheetNotSupportedException {
         SheetData sheetData = new SheetData(sheet.getSheetName());
-        int maxRows = 0;
-        int maxCols = 0;
         for (Row row : sheet) {
             for (Cell cell : row) {
                 if (cell != null) {
@@ -130,12 +128,12 @@ public class POIParser implements SpreadsheetParser {
                         sheetData.addContent(dep, cellContent);
                     }
                 }
-                if (cell.getColumnIndex() > maxCols) {
-                    maxCols = cell.getColumnIndex();
+                if (cell.getColumnIndex() > sheetData.getMaxCol()) {
+                    sheetData.setMaxCol(cell.getColumnIndex());
                 }
             }
-            if (row.getRowNum() > maxRows) {
-                maxRows = row.getRowNum();
+            if (row.getRowNum() > sheetData.getMaxRow()) {
+                sheetData.setMaxRow(row.getRowNum());
             }
         }
         return sheetData;

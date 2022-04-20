@@ -75,8 +75,15 @@ public abstract class SheetAnalyzer {
      *
      * @return
      */
-    public abstract Map<String, Pair<Map<Ref, List<RefWithMeta>>,
-            Map<Ref, List<RefWithMeta>>>>  getTACODepGraphs();
+    public abstract Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getTACODepGraphs();
+
+    /**
+     * Get a TACO graph without overlapping refs for visualization-friendly
+     * purposes.
+     * 
+     * @return
+     */
+    public abstract Map<String, Pair<Map<Ref, List<RefWithMeta>>, Map<Ref, List<RefWithMeta>>>> getNonOverlappingGraphs();
 
     /**
      * Get the formula clusters
