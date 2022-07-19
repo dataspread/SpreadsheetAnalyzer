@@ -43,7 +43,7 @@ public class SheetAnalyzer {
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
 
-            depGraph.dollar_signed = false;
+            depGraph.dollar_signed = true;
 
             depGraph.setInRowCompression(inRowCompression);
             HashSet<Ref> refSet = new HashSet<>();

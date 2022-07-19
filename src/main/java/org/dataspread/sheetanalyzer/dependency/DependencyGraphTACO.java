@@ -606,7 +606,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                 }
             }
         }
-        System.out.println(compressType);
+        // System.out.println(compressType);
         return compressType;
     }
 
