@@ -1,28 +1,28 @@
 package org.dataspread.sheetanalyzer.tacoTest;
 
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
-import org.dataspread.sheetanalyzer.util.TestUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
-import org.dataspread.sheetanalyzer.util.RefImpl;
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.junit.jupiter.api.Assertions;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.util.TestUtil;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.io.File;
 
 public class TestFFPattern {
 
-    private static SheetAnalyzer sheetAnalyzer;
+  private static SheetAnalyzer sheetAnalyzer;
     private static final String sheetName = "FFSheet";
     private static final int maxRows = 1000;
 
@@ -35,7 +35,7 @@ public class TestFFPattern {
             Cell cellA = row.createCell(colA);
             Cell cellB = row.createCell(colB);
             Cell cellC = row.createCell(colC);
-            cellA.setCellValue(i + 1);
+            cellA.setCellValue(i+1);
             cellB.setCellValue(10);
             cellC.setCellFormula("SUM(A1:" + "B" + maxRows + ")");
         }
@@ -52,7 +52,8 @@ public class TestFFPattern {
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createFFSheet();
-        sheetAnalyzer = SheetAnalyzer.createSheetAnalyzer(xlsTempFile.getAbsolutePath());
+        boolean inRowCompression = false;
+        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
     }
 
     /**
@@ -62,15 +63,13 @@ public class TestFFPattern {
     public void verifyDependencyA() {
         int firstQueryRow = 0, firstQueryColumn = 0;
         int lastQueryRow = maxRows - 1, lastQueryColumn = 0;
-        Ref queryRef = new RefImpl(firstQueryRow, firstQueryColumn,
-                lastQueryRow, lastQueryColumn);
+        Ref queryRef = new RefImpl(firstQueryRow, firstQueryColumn, lastQueryRow, lastQueryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
 
         Set<Ref> groundTruth = new HashSet<>();
         int firstRow = 0, firstColumn = 2;
         int lastRow = maxRows - 1, lastColumn = 2;
-        groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow,
-                lastColumn));
+        groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow, lastColumn));
 
         Assertions.assertTrue(TestUtil.hasSameRefs(groundTruth, queryResult));
     }
@@ -82,15 +81,13 @@ public class TestFFPattern {
     public void verifyDependencyB() {
         int firstQueryRow = 0, firstQueryColumn = 1;
         int lastQueryRow = maxRows - 1, lastQueryColumn = 1;
-        Ref queryRef = new RefImpl(firstQueryRow, firstQueryColumn,
-                lastQueryRow, lastQueryColumn);
+        Ref queryRef = new RefImpl(firstQueryRow, firstQueryColumn, lastQueryRow, lastQueryColumn);
         Set<Ref> queryResult = sheetAnalyzer.getDependents(sheetName, queryRef);
 
         Set<Ref> groundTruth = new HashSet<>();
         int firstRow = 0, firstColumn = 2;
         int lastRow = maxRows - 1, lastColumn = 2;
-        groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow,
-                lastColumn));
+        groundTruth.add(new RefImpl(firstRow, firstColumn, lastRow, lastColumn));
 
         Assertions.assertTrue(TestUtil.hasSameRefs(groundTruth, queryResult));
     }

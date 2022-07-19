@@ -4,34 +4,32 @@ import java.util.Objects;
 
 public class Offset {
 
-    public static final Offset noOffset = new Offset(0, 0);
-    private final int rowOffset;
-    private final int colOffset;
+    public static Offset noOffset = new Offset(0, 0);
 
-    public Offset(int rowOffset, int colOffset) {
+    private int rowOffset;
+    private int colOffset;
+
+    public Offset(int rowOffset,
+                  int colOffset) {
         this.rowOffset = rowOffset;
         this.colOffset = colOffset;
     }
 
     public int getColOffset() {
-        return this.colOffset;
+        return colOffset;
     }
 
     public int getRowOffset() {
-        return this.rowOffset;
+        return rowOffset;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Offset)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof Offset)) return false;
         Offset offset = (Offset) o;
-        return this.rowOffset == offset.rowOffset
-                && this.colOffset == offset.colOffset;
+        return rowOffset == offset.rowOffset &&
+                colOffset == offset.colOffset;
     }
 
     @Override

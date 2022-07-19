@@ -21,12 +21,23 @@ public interface Ref {
 
 	int getLastColumn();
 
-	// ZSS-815
-	// since 3.7.0
-	int getSheetIndex();
 
-	// ZSS-815
-	// since 3.7.0
+	// ADD: interface for dollar setting and checking
+	void setLeftUpColumnDollar();
+	void setLeftUpRowDollar();
+	void setRightDownColumnDollar();
+	void setRightDownRowDollar();
+	boolean checkLeftUpColumnDollar();
+	boolean checkLeftUpRowDollar();
+	boolean checkRightDownColumnDollar();
+	boolean checkRightDownRowDollar();
+
+	//ZSS-815
+	//since 3.7.0
+	int getSheetIndex();
+	
+	//ZSS-815
+	//since 3.7.0
 	int getLastSheetIndex();
 
 	Set<Ref> getPrecedents();
@@ -34,9 +45,7 @@ public interface Ref {
 	Ref getBoundingBox(Ref target);
 
 	int getCellCount();
-
 	Ref getOverlap(Ref target);
-
 	Set<Ref> getNonOverlap(Ref target);
 
 	void addPrecedent(Ref precedent);

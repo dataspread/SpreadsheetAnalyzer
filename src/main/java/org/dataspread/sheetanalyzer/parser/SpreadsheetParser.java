@@ -1,13 +1,11 @@
 package org.dataspread.sheetanalyzer.parser;
 
-import org.dataspread.sheetanalyzer.data.SheetData;
+import org.dataspread.sheetanalyzer.util.SheetData;
 
-import java.util.Map;
+import java.util.HashMap;
 
 public interface SpreadsheetParser {
     public String getFileName();
-
-    public Map<String, SheetData> getSheetData();
-
+    public HashMap<String, SheetData> getSheetData();
     public boolean skipParsing(int threshold);
 }
