@@ -34,7 +34,7 @@ public class CollectTACOStat {
 
                 String filePath = inputFile.getAbsolutePath();
                 try {
-                    SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression);
+                    SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, true);
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(sheetAnalyzer.getFileName()).append(",")
                             .append(sheetAnalyzer.getNumEdges()).append(",")

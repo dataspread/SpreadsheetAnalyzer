@@ -125,10 +125,6 @@ public class DependencyGraphTACO implements DependencyGraph {
         return retRefList;
     }
 
-    // private boolean isContained(LinkedHashSet<Ref> result, Ref input) {
-    //     return result.stream().anyMatch(ref -> isSubsume(ref, input));
-    // }
-
     public long getNumEdges() {
         AtomicLong numEdges = new AtomicLong(0);
         depToPrecList.forEach((dep, precSet) -> {

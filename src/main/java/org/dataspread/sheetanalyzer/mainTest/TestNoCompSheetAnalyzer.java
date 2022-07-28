@@ -10,10 +10,9 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class TestSheetAnalyzer {
-
-    static String numRefDistFile = "numRefDist.csv";
-    static String numEdgesFile = "stat.csv";
+public class TestNoCompSheetAnalyzer {
+    // static String numRefDistFile = "numRefDist" + "_nocomp.csv";
+    static String numEdgesFile = "stat" + "_nocomp.csv";
 
     public static void main(String[] args) {
 
@@ -25,13 +24,13 @@ public class TestSheetAnalyzer {
         }
 
         boolean inRowCompression = false;
-        boolean isCompression = true;
+        boolean isCompression = false;
 
         String statFolder = args[1];
-        String numRefDistPath = statFolder + "/" + numRefDistFile;
+        // String numRefDistPath = statFolder + "/" + numRefDistFile;
         String statPath = statFolder + "/" + numEdgesFile;
 
-        HashMap<Integer, Long> numRefDist = new HashMap<>();
+        // HashMap<Integer, Long> numRefDist = new HashMap<>();
 
         File inputFile = new File(args[0]);
         File [] fileArray;
@@ -43,7 +42,7 @@ public class TestSheetAnalyzer {
 
         if (fileArray != null) {
             int counter = 0;
-            try (PrintWriter distPW = new PrintWriter(new FileWriter(numRefDistPath, true));
+            try (// PrintWriter distPW = new PrintWriter(new FileWriter(numRefDistPath, true));
                  PrintWriter statPW = new PrintWriter(new FileWriter(statPath, true))) {
 
                 for (File file: fileArray) {
@@ -56,11 +55,13 @@ public class TestSheetAnalyzer {
 
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
 
+                        /*
                         HashMap<Integer, Integer> numRefDistPerSheet = sheetAnalyzer.getRefDistribution();
                         numRefDistPerSheet.forEach((numRefs, count) -> {
                             long existingCount = numRefDist.getOrDefault(numRefs, 0L);
                             numRefDist.put(numRefs, existingCount + count);
                         });
+                        */
 
                     } catch (SheetNotSupportedException e) {
                         System.out.println(e.getMessage());
@@ -68,14 +69,11 @@ public class TestSheetAnalyzer {
                         System.out.println(e.getMessage());
                     }
                 }
-                if (!inRowCompression) {
-                    numRefDist.forEach((numRefs, count) ->
-                            distPW.write(numRefs + "," + count + "\n"));
-                }
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
+
 }

@@ -53,7 +53,7 @@ public class TestFFPattern {
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createFFSheet();
         boolean inRowCompression = false;
-        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression);
+        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression, true);
     }
 
     /**

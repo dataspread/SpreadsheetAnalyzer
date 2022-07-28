@@ -1,6 +1,7 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
@@ -25,29 +26,49 @@ public class MainTestUtil {
 
         long[] numCompEdgesPerPattern = new long[PatternType.values().length];
         long[] numEdgesPerPattern = new long[PatternType.values().length];
+        long mostDepLookupTime = 0;
+        long longestDepLookupTime = 0;
+        long mostDepLookupSize = 0;
+        long longestDepLookupSize = 0;
 
         if (!inRowCompression) {
-            //mostDeps = sheetAnalyzer.getRefWithMostDeps();
-            //longestDeps = sheetAnalyzer.getRefWithLongestDepChain();
-            sheetAnalyzer.getTACODepGraphs().forEach((sheetName, tacoGraph) -> {
-                tacoGraph.forEach((prec, depWithMetaList) -> {
-                    depWithMetaList.forEach(depWithMeta -> {
-                        Ref dep = depWithMeta.getRef();
-                        PatternType patternType = depWithMeta.getPatternType();
+            mostDeps = sheetAnalyzer.getRefWithMostDeps();
+            longestDeps = sheetAnalyzer.getRefWithLongestDepChain();
 
-                        int patternIndex = patternType.ordinal();
-                        numCompEdgesPerPattern[patternIndex] += 1;
+            // MostDeps
+            long start = System.currentTimeMillis();
+            String depSheetName = mostDeps.first.getSheetName();
+            DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(depSheetName);
+            mostDepLookupSize = depGraph.getDependents(mostDeps.first).size();
+            mostDepLookupTime = System.currentTimeMillis() - start;
+            // LongestDeps
+            start = System.currentTimeMillis();
+            depSheetName = longestDeps.first.getSheetName();
+            depGraph = sheetAnalyzer.getDependencyGraphs().get(depSheetName);
+            longestDepLookupSize = depGraph.getDependents(longestDeps.first).size();
+            longestDepLookupTime = System.currentTimeMillis() - start;
 
-                        long numPatternEdges = dep.getCellCount();
-                        if (patternType.ordinal() >= PatternType.TYPEFIVE.ordinal() &&
-                                patternType != PatternType.NOTYPE) {
-                            long gap = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
-                            numPatternEdges = (numPatternEdges - 1) / (gap + 1) + 1;
-                        }
-                        numEdgesPerPattern[patternIndex] += numPatternEdges;
+            if (sheetAnalyzer.getIsCompression()) {
+                sheetAnalyzer.getTACODepGraphs().forEach((sheetName, tacoGraph) -> {
+                    tacoGraph.forEach((prec, depWithMetaList) -> {
+                        depWithMetaList.forEach(depWithMeta -> {
+                            Ref dep = depWithMeta.getRef();
+                            PatternType patternType = depWithMeta.getPatternType();
+
+                            int patternIndex = patternType.ordinal();
+                            numCompEdgesPerPattern[patternIndex] += 1;
+
+                            long numPatternEdges = dep.getCellCount();
+                            if (patternType.ordinal() >= PatternType.TYPEFIVE.ordinal() &&
+                                    patternType != PatternType.NOTYPE) {
+                                long gap = patternType.ordinal() - PatternType.TYPEFIVE.ordinal() + 1;
+                                numPatternEdges = (numPatternEdges - 1) / (gap + 1) + 1;
+                            }
+                            numEdgesPerPattern[patternIndex] += numPatternEdges;
+                        });
                     });
                 });
-            });
+            }
         }
 
         if (numEdges >= 10) {
@@ -57,18 +78,22 @@ public class MainTestUtil {
                     .append(numVertices).append(",")
                     .append(numEdges).append(",")
                     .append(numCompVertices).append(",")
-                    .append(numCompEdges).append(",");
+                    .append(numCompEdges);
             if (!inRowCompression) {
-                /*
                 stringBuilder.append(",")
                         .append(mostDeps.first).append(",")
                         .append(mostDeps.second).append(",")
+                        .append(mostDepLookupTime).append(",")
+                        .append(mostDepLookupSize).append(",")
                         .append(longestDeps.first).append(",")
-                        .append(longestDeps.second).append(",");
-                */
-                for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
-                    stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
-                            .append(numEdgesPerPattern[pIdx]).append(",");
+                        .append(longestDeps.second).append(",")
+                        .append(longestDepLookupTime).append(",")
+                        .append(longestDepLookupSize).append(",");
+                if (sheetAnalyzer.getIsCompression()) {
+                    for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
+                        stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
+                                .append(numEdgesPerPattern[pIdx]).append(",");
+                    }
                 }
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1)
                         .append("\n");

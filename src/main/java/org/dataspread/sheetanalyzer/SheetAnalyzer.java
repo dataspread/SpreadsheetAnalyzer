@@ -1,16 +1,14 @@
 package org.dataspread.sheetanalyzer;
 
 import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
 import org.dataspread.sheetanalyzer.util.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,13 +19,17 @@ public class SheetAnalyzer {
     private final HashMap<String, SheetData> sheetDataMap;
     private final HashMap<String, DependencyGraph> depGraphMap;
     private final boolean inRowCompression;
+
+    // ADD
+    private final boolean isCompression;
+
     private long numEdges = 0;
     private long numVertices = 0;
     private final long maxNumQueries = 100000;
     private final long maxUnChangeNumQueries = 10000;
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression) throws SheetNotSupportedException {
+                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
 
@@ -35,8 +37,38 @@ public class SheetAnalyzer {
         sheetDataMap = parser.getSheetData();
 
         this.inRowCompression = inRowCompression;
+        this.isCompression = isCompression;
+
         depGraphMap = new HashMap<>();
-        genDepGraphFromSheetData(depGraphMap);
+
+        if (this.isCompression) {
+            genDepGraphFromSheetData(depGraphMap);
+        } else {
+            genNoCompDepGraphFromSheetData(depGraphMap);
+        }
+    }
+
+    public boolean getIsCompression() {
+        return isCompression;
+    }
+
+    private void genNoCompDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
+        sheetDataMap.forEach((sheetName, sheetData) -> {
+            DependencyGraphNoComp depGraph = new DependencyGraphNoComp();
+            HashSet<Ref> refSet = new HashSet<>();
+            sheetData.getDepPairs().forEach(depPair -> {
+                Ref dep = depPair.first;
+                List<Ref> precList = depPair.second;
+                precList.forEach(prec -> {
+                    depGraph.add(prec, dep);
+                    numEdges += 1;
+                });
+                refSet.add(dep);
+                refSet.addAll(precList);
+            });
+            inputDepGraphMap.put(sheetName, depGraph);
+            numVertices += refSet.size();
+        });
     }
 
     private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
@@ -46,6 +78,8 @@ public class SheetAnalyzer {
             depGraph.dollar_signed = true;
 
             depGraph.setInRowCompression(inRowCompression);
+            depGraph.setDoCompression(true);
+
             HashSet<Ref> refSet = new HashSet<>();
             sheetData.getDepPairs().forEach(depPair -> {
                 if (inRowCompression) {
@@ -61,7 +95,6 @@ public class SheetAnalyzer {
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
-            depGraph.setDoCompression(true);
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();
         });
@@ -107,6 +140,14 @@ public class SheetAnalyzer {
 
     public Set<Ref> getPrecedents(String sheetName, Ref ref) {
         return depGraphMap.get(sheetName).getPrecedents(ref);
+    }
+
+    public HashMap<String, HashMap<Ref, Set<Ref>>> getNoCompDepgraphs() {
+        HashMap<String, HashMap<Ref, Set<Ref>>> DepGraphs = new HashMap<>();
+        depGraphMap.forEach((sheetName, depGraph) -> {
+            DepGraphs.put(sheetName, ((DependencyGraphNoComp)depGraph).getGraph());
+        });
+        return DepGraphs;
     }
 
     public HashMap<String, HashMap<Ref, List<RefWithMeta>>> getTACODepGraphs() {
