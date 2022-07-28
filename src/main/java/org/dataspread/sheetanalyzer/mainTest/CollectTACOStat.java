@@ -30,11 +30,13 @@ public class CollectTACOStat {
         String tacoStatPath = statFolder + "/" + tacoFile;
 
         boolean inRowCompression = false;
+        boolean isCompression = true;
         try (PrintWriter statPW = new PrintWriter(new FileWriter(tacoStatPath, true))) {
 
                 String filePath = inputFile.getAbsolutePath();
                 try {
-                    SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, true);
+                    SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath,
+                            inRowCompression, isCompression);
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(sheetAnalyzer.getFileName()).append(",")
                             .append(sheetAnalyzer.getNumEdges()).append(",")

@@ -52,8 +52,7 @@ public class TestRRPattern {
     @BeforeAll
     public static void setUp() throws IOException, SheetNotSupportedException {
         File xlsTempFile = createRRSheet();
-        boolean inRowCompression = false;
-        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath(), inRowCompression, true);
+        sheetAnalyzer = new SheetAnalyzer(xlsTempFile.getAbsolutePath());
     }
 
     @Test

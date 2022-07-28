@@ -62,19 +62,18 @@ public class DependencyGraphNoComp implements DependencyGraph {
     }
 
     private boolean isSubsume(Ref large, Ref small) {
-        if (large.getOverlap(small) == null)
+        Ref overlap = large.getOverlap(small);
+        if (overlap == null)
             return false;
-        return large.getOverlap(small).equals(small);
+        return overlap.equals(small);
     }
 
     private Set<Ref> getNeighbors(Ref ref) {
         Iterator<Entry<Ref, Rectangle>> rTreeIter = this._rectToRef.search(getRectangleFromRef(ref))
                 .toBlocking().getIterator();
         Set<Ref> neighbors = new HashSet<>();
-        if (rTreeIter.hasNext()) {
-            while (rTreeIter.hasNext()) {
-                neighbors.add(rTreeIter.next().value());
-            }
+        while (rTreeIter.hasNext()) {
+            neighbors.add(rTreeIter.next().value());
         }
         return neighbors;
     }

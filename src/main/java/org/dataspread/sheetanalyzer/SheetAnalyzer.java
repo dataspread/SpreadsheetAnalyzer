@@ -1,5 +1,6 @@
 package org.dataspread.sheetanalyzer;
 
+import org.apache.poi.ss.usermodel.Sheet;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
@@ -27,6 +28,10 @@ public class SheetAnalyzer {
     private long numVertices = 0;
     private final long maxNumQueries = 100000;
     private final long maxUnChangeNumQueries = 10000;
+
+    public SheetAnalyzer(String filePath) throws SheetNotSupportedException {
+        this(filePath, false, true);
+    }
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException {
