@@ -143,7 +143,7 @@ public class DependencyGraphNoComp implements DependencyGraph {
         }
 
         // Same row
-        if (ref.getRow() == ref.getRow() && ref.getLastRow() == refNext.getLastRow()) {
+        if (ref.getRow() == refNext.getRow() && ref.getLastRow() == refNext.getLastRow()) {
             if (refNext.getColumn() == ref.getLastColumn() + 1) {
                 return true;
             }
