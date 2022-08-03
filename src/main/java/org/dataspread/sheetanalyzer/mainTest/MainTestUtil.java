@@ -2,12 +2,16 @@ package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
 import java.io.PrintWriter;
+import java.util.Set;
 
 public class MainTestUtil {
 
@@ -81,10 +85,12 @@ public class MainTestUtil {
                     .append(numCompEdges);
             if (!inRowCompression) {
                 stringBuilder.append(",")
+                        .append(mostDeps.first.getSheetName()).append(",")
                         .append(mostDeps.first).append(",")
                         .append(mostDeps.second).append(",")
                         .append(mostDepLookupTime).append(",")
                         .append(mostDepLookupSize).append(",")
+                        .append(longestDeps.first.getSheetName()).append(",")
                         .append(longestDeps.first).append(",")
                         .append(longestDeps.second).append(",")
                         .append(longestDepLookupTime).append(",")
@@ -95,12 +101,99 @@ public class MainTestUtil {
                                 .append(numEdgesPerPattern[pIdx]).append(",");
                     }
                 }
-                stringBuilder.deleteCharAt(stringBuilder.length() - 1)
-                        .append("\n");
-            } else {
-                stringBuilder.append("\n");
             }
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
             statPW.write(stringBuilder.toString());
+        }
+    }
+
+    public static void TestComparisonStat(PrintWriter statPW, String filePath) {
+        boolean inRowCompression = false;
+        try {
+            SheetAnalyzer sheetCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, true);
+            SheetAnalyzer sheetNoCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, false);
+
+            Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
+            Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
+            long mostDepCompLookupTime = 0, longestDepCompLookupTime = 0,
+                    mostDepCompLookupSize = 0, longestDepCompLookupSize = 0,
+                    mostDepCompPostProcesedLookupSize = 0, longestDepCompPostProcesedLookupSize = 0;
+            long mostDepNoCompLookupTime = 0, longestDepNoCompLookupTime = 0,
+                    mostDepNoCompLookupSize = 0, longestDepNoCompLookupSize = 0,
+                    mostDepNoCompPostProcesedLookupSize = 0, longestDepNoCompPostProcesedLookupSize = 0;
+
+            String fileName = sheetCompAnalyzer.getFileName().replace(",", "-");
+            long numEdges = sheetCompAnalyzer.getNumEdges();
+            mostDeps = sheetCompAnalyzer.getRefWithMostDeps();
+            longestDeps = sheetCompAnalyzer.getRefWithLongestDepChain();
+            Set<Ref> result, processedResult;
+
+            // MostDeps - Comp
+            long start = System.currentTimeMillis();
+            String depSheetName = mostDeps.first.getSheetName();
+            DependencyGraphTACO depCompGraph = (DependencyGraphTACO) sheetCompAnalyzer.getDependencyGraphs().get(depSheetName);
+            result = depCompGraph.getDependents(mostDeps.first);
+            mostDepCompLookupSize = result.size();
+            mostDepCompLookupTime = System.currentTimeMillis() - start;
+            processedResult = depCompGraph.postProcessDependents(result);
+            mostDepCompPostProcesedLookupSize = processedResult.size();
+
+            // MostDeps - NoComp
+            start = System.currentTimeMillis();
+            DependencyGraphNoComp depNoCompGraph = (DependencyGraphNoComp) sheetNoCompAnalyzer.getDependencyGraphs().get(depSheetName);
+            result = depNoCompGraph.getDependents(mostDeps.first);
+            mostDepNoCompLookupSize = result.size();
+            mostDepNoCompLookupTime = System.currentTimeMillis() - start;
+            processedResult = depNoCompGraph.postProcessDependents(result);
+            mostDepNoCompPostProcesedLookupSize = processedResult.size();
+
+            // LongestDeps - Comp
+            start = System.currentTimeMillis();
+            depSheetName = longestDeps.first.getSheetName();
+            depCompGraph = (DependencyGraphTACO) sheetCompAnalyzer.getDependencyGraphs().get(depSheetName);
+            result = depCompGraph.getDependents(longestDeps.first);
+            longestDepCompLookupSize = result.size();
+            longestDepCompLookupTime = System.currentTimeMillis() - start;
+            processedResult = depCompGraph.postProcessDependents(result);
+            longestDepCompPostProcesedLookupSize = processedResult.size();
+
+            // LongestDeps - NoComp
+            start = System.currentTimeMillis();
+            depNoCompGraph = (DependencyGraphNoComp) sheetNoCompAnalyzer.getDependencyGraphs().get(depSheetName);
+            result = depNoCompGraph.getDependents(longestDeps.first);
+            longestDepNoCompLookupSize = result.size();
+            longestDepNoCompLookupTime = System.currentTimeMillis() - start;
+            processedResult = depNoCompGraph.postProcessDependents(result);
+            longestDepNoCompPostProcesedLookupSize = processedResult.size();
+
+            if (numEdges >= 10) {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append(fileName).append(",")
+                        .append(mostDeps.first.getSheetName()).append(",")
+                        .append(mostDeps.first).append(",")
+                        .append(mostDeps.second).append(",")
+                        .append(mostDepCompLookupTime).append(",")
+                        .append(mostDepCompLookupSize).append(",")
+                        .append(mostDepCompPostProcesedLookupSize).append(",")
+                        .append(mostDepNoCompLookupTime).append(",")
+                        .append(mostDepNoCompLookupSize).append(",")
+                        .append(mostDepNoCompPostProcesedLookupSize).append(",")
+                        .append(longestDeps.first.getSheetName()).append(",")
+                        .append(longestDeps.first).append(",")
+                        .append(longestDeps.second).append(",")
+                        .append(longestDepCompLookupTime).append(",")
+                        .append(longestDepCompLookupSize).append(",")
+                        .append(longestDepCompPostProcesedLookupSize).append(",")
+                        .append(longestDepNoCompLookupTime).append(",")
+                        .append(longestDepNoCompLookupSize).append(",")
+                        .append(longestDepNoCompPostProcesedLookupSize);
+                stringBuilder.append("\n");
+                statPW.write(stringBuilder.toString());
+            }
+        } catch (SheetNotSupportedException e) {
+            System.out.println(e.getMessage());
+        } catch (OutOfMemoryError e) {
+            System.out.println(e.getMessage());
         }
     }
 

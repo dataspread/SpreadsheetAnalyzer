@@ -1,6 +1,7 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
 import java.io.File;
@@ -12,8 +13,8 @@ import java.util.HashMap;
 
 public class TestSheetAnalyzer {
 
-    static String numRefDistFile = "numRefDist.csv";
-    static String numEdgesFile = "stat.csv";
+    static String numRefDistFile = "enron_numRefDist.csv";
+    static String numEdgesFile = "enron_stat.csv";
 
     public static void main(String[] args) {
 
@@ -46,6 +47,39 @@ public class TestSheetAnalyzer {
             try (PrintWriter distPW = new PrintWriter(new FileWriter(numRefDistPath, true));
                  PrintWriter statPW = new PrintWriter(new FileWriter(statPath, true))) {
 
+                // Write headers in stat
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append("fileName").append(",")
+                        .append("numFormulae").append(",")
+                        .append("numVertices").append(",")
+                        .append("numEdges").append(",")
+                        .append("numCompVertices").append(",")
+                        .append("numCompEdges");
+                if (!inRowCompression) {
+                    stringBuilder.append(",")
+                            .append("mostDeps_sheetname").append(",")
+                            .append("mostDeps_ref").append(",")
+                            .append("mostDeps_count").append(",")
+                            .append("mostDepLookupTime").append(",")
+                            .append("mostDepLookupSize").append(",")
+                            .append("longestDeps_sheetname").append(",")
+                            .append("longestDeps_ref").append(",")
+                            .append("longestDeps_count").append(",")
+                            .append("longestDepLookupTime").append(",")
+                            .append("longestDepLookupSize").append(",");
+                    if (isCompression) {
+                        long numType = PatternType.values().length;
+                        for (int pIdx = 0; pIdx < numType; pIdx++) {
+                            stringBuilder.append(PatternType.values()[pIdx].label + "_Comp").append(",")
+                                    .append(PatternType.values()[pIdx].label + "_NoComp").append(",");
+                        }
+                    }
+                    stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
+                } else {
+                    stringBuilder.append("\n");
+                }
+                statPW.write(stringBuilder.toString());
+
                 for (File file: fileArray) {
                     counter += 1;
                     System.out.println("[" + counter + "/" +
@@ -65,6 +99,8 @@ public class TestSheetAnalyzer {
                     } catch (SheetNotSupportedException e) {
                         System.out.println(e.getMessage());
                     } catch (OutOfMemoryError e) {
+                        System.out.println(e.getMessage());
+                    } catch (NullPointerException e) {
                         System.out.println(e.getMessage());
                     }
                 }

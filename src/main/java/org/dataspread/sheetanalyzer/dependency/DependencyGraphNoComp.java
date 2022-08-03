@@ -7,6 +7,7 @@ import com.github.davidmoten.rtree.geometry.Rectangle;
 import org.dataspread.sheetanalyzer.dependency.util.*;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,108 @@ public class DependencyGraphNoComp implements DependencyGraph {
                 }
             }
         }
+    }
+
+    public Set<Ref> postProcessDependents(Set<Ref> result) {
+        Set<Ref> newColumnResult = new HashSet<>();
+        Set<Ref> newRowResult = new HashSet<>();
+
+        ArrayList<Ref> resultArray = new ArrayList<>(result);
+        Collections.sort(resultArray, new Comparator<Ref>() {
+            @Override
+            public int compare(Ref o1, Ref o2) {
+                if (o1.getColumn() != o2.getColumn()) {
+                    return o1.getColumn() - o2.getColumn();
+                } else {
+                    return o1.getRow() - o2.getRow();
+                }
+            }
+        });
+        Iterator<Ref> it = resultArray.iterator();
+        while (it.hasNext()) {
+            Ref mergedRef = it.next();
+            while (it.hasNext()) {
+                Ref refNext = it.next();
+                if (!isVerticalMergable(mergedRef, refNext)) {
+                    newColumnResult.add(refNext);
+                    break;
+                } else {
+                    mergedRef = mergeRef(mergedRef, refNext);
+                }
+            }
+            newColumnResult.add(mergedRef);
+        }
+
+        resultArray = new ArrayList<>(newColumnResult);
+        Collections.sort(resultArray, new Comparator<Ref>() {
+            @Override
+            public int compare(Ref o1, Ref o2) {
+                if (o1.getRow() != o2.getRow()) {
+                    return o1.getRow() - o2.getRow();
+                } else {
+                    return o1.getColumn() - o2.getColumn();
+                }
+            }
+        });
+        it = resultArray.iterator();
+        while (it.hasNext()) {
+            Ref mergedRef = it.next();
+            while (it.hasNext()) {
+                Ref refNext = it.next();
+                if (!isHorizontalMergable(mergedRef, refNext)) {
+                    newRowResult.add(refNext);
+                    break;
+                } else {
+                    mergedRef = mergeRef(mergedRef, refNext);
+                }
+            }
+            newRowResult.add(mergedRef);
+        }
+        return newRowResult;
+    }
+
+    private Ref mergeRef(Ref ref, Ref refNext) {
+        Ref newRef = new RefImpl(ref.getBookName(), ref.getSheetName(),
+                ref.getRow(), ref.getColumn(), refNext.getLastRow(), refNext.getLastColumn());
+        if (ref.getPrecedents() != null) {
+            for (Ref r: ref.getPrecedents()) {
+                newRef.addPrecedent(r);
+            }
+        }
+        if (refNext.getPrecedents() != null) {
+            for (Ref r: refNext.getPrecedents()) {
+                ref.addPrecedent(r);
+            }
+        }
+        return newRef;
+    }
+
+    private boolean isVerticalMergable(Ref ref, Ref refNext) {
+        if (!ref.getSheetName().equals(refNext.getSheetName())) {
+            return false;
+        }
+
+        // Same column
+        if (ref.getColumn() == refNext.getColumn() && ref.getLastColumn() == refNext.getLastColumn()) {
+            if (refNext.getRow() == ref.getLastRow() + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isHorizontalMergable(Ref ref, Ref refNext) {
+        if (!ref.getSheetName().equals(refNext.getSheetName())) {
+            return false;
+        }
+
+        // Same row
+        if (ref.getRow() == ref.getRow() && ref.getLastRow() == refNext.getLastRow()) {
+            if (refNext.getColumn() == ref.getLastColumn() + 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isContained(RTree<Ref, Rectangle> resultSet, Ref input) {

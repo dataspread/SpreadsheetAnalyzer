@@ -5,6 +5,8 @@ import java.util.Set;
 public interface Ref {
 	RefType getType();
 
+	void setType(Ref.RefType type);
+
 	String getBookName();
 
 	void setSheetName(String sheetName);
@@ -21,6 +23,10 @@ public interface Ref {
 
 	int getLastColumn();
 
+	void setRow(int row);
+	void setColumn(int column);
+	void setLastRow(int lastRow);
+	void setLastColumn(int lastColumn);
 
 	// ADD: interface for dollar setting and checking
 	void setLeftUpColumnDollar();

@@ -129,10 +129,34 @@ public class RefImpl implements Ref, Serializable {
 		return right_down_row_dollar;
 	}
 
-
 	@Override
 	public RefType getType() {
 		return _type;
+	}
+
+	@Override
+	public void setType(RefType type) {
+		_type = type;
+	}
+
+	@Override
+	public void setRow(int row) {
+		_row = row;
+	}
+
+	@Override
+	public void setColumn(int column) {
+		_column = column;
+	}
+
+	@Override
+	public void setLastRow(int lastRow) {
+		_lastRow = lastRow;
+	}
+
+	@Override
+	public void setLastColumn(int lastColumn) {
+		_lastColumn = lastColumn;
 	}
 
 	@Override
@@ -296,7 +320,7 @@ public class RefImpl implements Ref, Serializable {
 		case TABLE: //ZSS-960
 		}
 
-		sb.insert(0, sheetName + ":");
+		// sb.insert(0, sheetName + ":");
 		return sb.toString();
 	}
 
