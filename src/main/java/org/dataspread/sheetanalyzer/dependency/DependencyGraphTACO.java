@@ -80,19 +80,22 @@ public class DependencyGraphTACO implements DependencyGraph {
                 }
             }
         });
-        Iterator<Ref> it = resultArray.iterator();
-        while (it.hasNext()) {
-            Ref mergedRef = it.next();
-            while (it.hasNext()) {
-                Ref refNext = it.next();
+
+        int idx = 0;
+        while (idx < resultArray.size()) {
+            Ref mergedRef = resultArray.get(idx);
+            int nextIdx = idx + 1;
+            while (nextIdx < resultArray.size()) {
+                Ref refNext = resultArray.get(nextIdx);
                 if (!isVerticalMergable(mergedRef, refNext)) {
-                    newColumnResult.add(refNext);
                     break;
                 } else {
                     mergedRef = mergeRef(mergedRef, refNext);
                 }
+                nextIdx += 1;
             }
             newColumnResult.add(mergedRef);
+            idx = nextIdx;
         }
 
         resultArray = new ArrayList<>(newColumnResult);
@@ -106,26 +109,33 @@ public class DependencyGraphTACO implements DependencyGraph {
                 }
             }
         });
-        it = resultArray.iterator();
-        while (it.hasNext()) {
-            Ref mergedRef = it.next();
-            while (it.hasNext()) {
-                Ref refNext = it.next();
+
+        idx = 0;
+        while (idx < resultArray.size()) {
+            Ref mergedRef = resultArray.get(idx);
+            int nextIdx = idx + 1;
+            while (nextIdx < resultArray.size()) {
+                Ref refNext = resultArray.get(nextIdx);
                 if (!isHorizontalMergable(mergedRef, refNext)) {
-                    newRowResult.add(refNext);
                     break;
                 } else {
                     mergedRef = mergeRef(mergedRef, refNext);
                 }
+                nextIdx += 1;
             }
             newRowResult.add(mergedRef);
+            idx = nextIdx;
         }
+
         return newRowResult;
     }
 
     private Ref mergeRef(Ref ref, Ref refNext) {
+        int newLastRow = Math.max(ref.getLastRow(), refNext.getLastRow());
+        int newLastColumn = Math.max(ref.getLastColumn(), refNext.getLastColumn());
+
         Ref newRef = new RefImpl(ref.getBookName(), ref.getSheetName(),
-                ref.getRow(), ref.getColumn(), refNext.getLastRow(), refNext.getLastColumn());
+                ref.getRow(), ref.getColumn(), newLastRow, newLastColumn);
 
         if (ref.getPrecedents() != null) {
             for (Ref r: ref.getPrecedents()) {
@@ -147,7 +157,7 @@ public class DependencyGraphTACO implements DependencyGraph {
 
         // Same column
         if (ref.getColumn() == refNext.getColumn() && ref.getLastColumn() == refNext.getLastColumn()) {
-            if (refNext.getRow() == ref.getLastRow() + 1) {
+            if (refNext.getRow() <= ref.getLastRow() + 1) {
                 return true;
             }
         }
@@ -160,8 +170,8 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
 
         // Same row
-        if (ref.getRow() == ref.getRow() && ref.getLastRow() == refNext.getLastRow()) {
-            if (refNext.getColumn() == ref.getLastColumn() + 1) {
+        if (ref.getRow() == refNext.getRow() && ref.getLastRow() == refNext.getLastRow()) {
+            if (refNext.getColumn() <= ref.getLastColumn() + 1) {
                 return true;
             }
         }

@@ -11,7 +11,7 @@ import java.io.PrintWriter;
 
 
 public class ComparisonTest {
-    static String numEdgesFile = "temp.csv";
+    static String numEdgesFile = "new_test_compare_stat.csv";
 
     public static void main(String[] args) {
 
