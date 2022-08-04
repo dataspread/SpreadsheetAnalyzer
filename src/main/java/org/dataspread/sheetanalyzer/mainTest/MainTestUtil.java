@@ -10,7 +10,12 @@ import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Set;
 
 public class MainTestUtil {
@@ -117,10 +122,12 @@ public class MainTestUtil {
             Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
             long mostDepCompLookupTime = 0, longestDepCompLookupTime = 0,
                     mostDepCompLookupSize = 0, longestDepCompLookupSize = 0,
-                    mostDepCompPostProcesedLookupSize = 0, longestDepCompPostProcesedLookupSize = 0;
+                    mostDepCompPostProcesedLookupSize = 0, longestDepCompPostProcesedLookupSize = 0,
+                    mostDepCompPostProcessedLookupTime = 0, longestDepCompPostProcessedLookupTime = 0;
             long mostDepNoCompLookupTime = 0, longestDepNoCompLookupTime = 0,
                     mostDepNoCompLookupSize = 0, longestDepNoCompLookupSize = 0,
-                    mostDepNoCompPostProcesedLookupSize = 0, longestDepNoCompPostProcesedLookupSize = 0;
+                    mostDepNoCompPostProcesedLookupSize = 0, longestDepNoCompPostProcesedLookupSize = 0,
+                    mostDepNoCompPostProcessedLookupTime = 0, longestDepNoCompPostProcessedLookupTime = 0;
 
             String fileName = sheetCompAnalyzer.getFileName().replace(",", "-");
             long numEdges = sheetCompAnalyzer.getNumEdges();
@@ -137,6 +144,7 @@ public class MainTestUtil {
             mostDepCompLookupTime = System.currentTimeMillis() - start;
             processedResult = depCompGraph.postProcessDependents(result);
             mostDepCompPostProcesedLookupSize = processedResult.size();
+            mostDepCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
             // MostDeps - NoComp
             start = System.currentTimeMillis();
@@ -146,6 +154,7 @@ public class MainTestUtil {
             mostDepNoCompLookupTime = System.currentTimeMillis() - start;
             processedResult = depNoCompGraph.postProcessDependents(result);
             mostDepNoCompPostProcesedLookupSize = processedResult.size();
+            mostDepNoCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
             // LongestDeps - Comp
             start = System.currentTimeMillis();
@@ -156,6 +165,7 @@ public class MainTestUtil {
             longestDepCompLookupTime = System.currentTimeMillis() - start;
             processedResult = depCompGraph.postProcessDependents(result);
             longestDepCompPostProcesedLookupSize = processedResult.size();
+            longestDepCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
             // LongestDeps - NoComp
             start = System.currentTimeMillis();
@@ -165,6 +175,7 @@ public class MainTestUtil {
             longestDepNoCompLookupTime = System.currentTimeMillis() - start;
             processedResult = depNoCompGraph.postProcessDependents(result);
             longestDepNoCompPostProcesedLookupSize = processedResult.size();
+            longestDepNoCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
             if (numEdges >= 10) {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -175,18 +186,22 @@ public class MainTestUtil {
                         .append(mostDepCompLookupTime).append(",")
                         .append(mostDepCompLookupSize).append(",")
                         .append(mostDepCompPostProcesedLookupSize).append(",")
+                        .append(mostDepCompPostProcessedLookupTime).append(",")
                         .append(mostDepNoCompLookupTime).append(",")
                         .append(mostDepNoCompLookupSize).append(",")
                         .append(mostDepNoCompPostProcesedLookupSize).append(",")
+                        .append(mostDepNoCompPostProcessedLookupTime).append(",")
                         .append(longestDeps.first.getSheetName()).append(",")
                         .append(longestDeps.first).append(",")
                         .append(longestDeps.second).append(",")
                         .append(longestDepCompLookupTime).append(",")
                         .append(longestDepCompLookupSize).append(",")
                         .append(longestDepCompPostProcesedLookupSize).append(",")
+                        .append(longestDepCompPostProcessedLookupTime).append(",")
                         .append(longestDepNoCompLookupTime).append(",")
                         .append(longestDepNoCompLookupSize).append(",")
-                        .append(longestDepNoCompPostProcesedLookupSize);
+                        .append(longestDepNoCompPostProcesedLookupSize).append(",")
+                        .append(longestDepNoCompPostProcessedLookupTime);
                 stringBuilder.append("\n");
                 statPW.write(stringBuilder.toString());
             }

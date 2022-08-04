@@ -9,8 +9,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+
 public class ComparisonTest {
-    static String numEdgesFile = "test_compare_stat.csv";
+    static String numEdgesFile = "temp.csv";
 
     public static void main(String[] args) {
 
@@ -45,18 +46,22 @@ public class ComparisonTest {
                             .append("mostDepCompLookupTime").append(",")
                             .append("mostDepCompLookupSize").append(",")
                             .append("mostDepCompPostProcessedLookupSize").append(",")
+                            .append("mostDepCompPostProcessedLookupTime").append(",")
                             .append("mostDepNoCompLookupTime").append(",")
                             .append("mostDepNoCompLookupSize").append(",")
                             .append("mostDepNoCompPostProcessedLookupSize").append(",")
+                            .append("mostDepNoCompPostProcessedLookupTime").append(",")
                             .append("longestDeps_sheetname").append(",")
                             .append("longestDeps_ref").append(",")
                             .append("longestDeps_count").append(",")
                             .append("longestDepCompLookupTime").append(",")
                             .append("longestDepCompLookupSize").append(",")
                             .append("longestDepCompPostProcessedLookupSize").append(",")
+                            .append("longestDepCompPostProcessedLookupTime").append(",")
                             .append("longestDepNoCompLookupTime").append(",")
                             .append("longestDepNoCompLookupSize").append(",")
-                            .append("longestDepNoCompPostProcessedLookupSize").append("\n");
+                            .append("longestDepNoCompPostProcessedLookupSize").append(",")
+                            .append("longestDepNoCompPostProcessedLookupTime").append("\n");
                 statPW.write(stringBuilder.toString());
 
                 for (File file: fileArray) {

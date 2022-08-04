@@ -126,6 +126,7 @@ public class DependencyGraphTACO implements DependencyGraph {
     private Ref mergeRef(Ref ref, Ref refNext) {
         Ref newRef = new RefImpl(ref.getBookName(), ref.getSheetName(),
                 ref.getRow(), ref.getColumn(), refNext.getLastRow(), refNext.getLastColumn());
+
         if (ref.getPrecedents() != null) {
             for (Ref r: ref.getPrecedents()) {
                 newRef.addPrecedent(r);
