@@ -5,6 +5,7 @@ import com.github.davidmoten.rtree.geometry.internal.RectangleFloat;
 import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
 
+
 public class RefUtils {
     public static boolean isValidRef(Ref ref) {
         return (ref.getRow() >= 0 &&
@@ -33,5 +34,19 @@ public class RefUtils {
             return new Offset(dep.getLastRow() - prec.getLastRow(),
                     dep.getLastColumn() - prec.getLastColumn());
         }
+    }
+
+    public static Ref fromStringToCell(String cellStr) {
+        String[] rowAndColumn = cellStr.split(":");
+        String rowStr = rowAndColumn[1];
+        int rowIdx = Integer.parseInt(rowStr) - 1;
+
+        int colIdx = 0;
+        char[] colChars = rowAndColumn[0].toLowerCase().toCharArray();
+        for (int i = 0; i < colChars.length; i++) {
+            colIdx += (colChars[i] - 'a') * Math.pow(colChars.length - i - 1, 26);
+        }
+        colIdx -= 1;
+        return new RefImpl(colIdx, rowIdx);
     }
 }
