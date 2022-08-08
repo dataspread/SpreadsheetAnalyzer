@@ -174,16 +174,16 @@ public class POIParser implements SpreadsheetParser {
 
                 // ADD: Set area dollar sign
                 Ref areaRef = new RefImpl(rowStart, colStart, rowEnd, colEnd);
-                if (ptg.isFirstColRelative() == false) {
+                if (!ptg.isFirstColRelative()) {
                     areaRef.setLeftUpColumnDollar();
                 }
-                if (ptg.isFirstRowRelative() == false) {
+                if (!ptg.isFirstRowRelative()) {
                     areaRef.setLeftUpRowDollar();
                 }
-                if (ptg.isLastColRelative() == false) {
+                if (!ptg.isLastColRelative()) {
                     areaRef.setRightDownColumnDollar();
                 }
-                if (ptg.isLastRowRelative() == false) {
+                if (!ptg.isLastRowRelative()) {
                     areaRef.setRightDownRowDollar();
                 }
 
@@ -230,11 +230,11 @@ public class POIParser implements SpreadsheetParser {
 
                 Ref new_ref = new RefImpl(row, col, row, col);
                 // ADD: Set dollar sign
-                if (ptg.isRowRelative() == false) {
+                if (!ptg.isRowRelative()) {
                     new_ref.setLeftUpRowDollar();
                     new_ref.setRightDownRowDollar();
                 }
-                if (ptg.isColRelative() == false) {
+                if (!ptg.isColRelative()) {
                     new_ref.setLeftUpColumnDollar();
                     new_ref.setRightDownColumnDollar();
                 }

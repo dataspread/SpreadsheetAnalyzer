@@ -5,6 +5,7 @@ import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
+import org.dataspread.sheetanalyzer.dependency.util.RefUtils;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
@@ -112,6 +113,44 @@ public class MainTestUtil {
         }
     }
 
+    public static void TestRefDependent(PrintWriter statPW, String fileDir, String fileName,
+                                        String refLoc, boolean isCompression) {
+        boolean inRowCompression = false;
+        String filePath = fileDir + "/" + fileName;
+
+        try {
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression);
+            String sheetName = refLoc.split(":")[0];
+            Ref targetRef = RefUtils.fromStringToCell(refLoc);
+
+            Set<Ref> result, processedResult;
+            long lookupSize = 0, lookupTime = 0, lookupPostSize = 0, lookupPostTime = 0;
+            DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(sheetName);
+
+            long start = System.currentTimeMillis();
+            result = depGraph.getDependents(targetRef);
+            lookupSize = result.size();
+            lookupTime = System.currentTimeMillis() - start;
+            processedResult = RefUtils.postProcessRefSet(result);
+            lookupPostSize = processedResult.size();
+            lookupPostTime = System.currentTimeMillis() - start;
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(fileName).append(",")
+                    .append(refLoc).append(",")
+                    .append(lookupSize).append(",")
+                    .append(lookupTime).append(",")
+                    .append(lookupPostSize).append(",")
+                    .append(lookupPostTime).append("\n");
+            statPW.write(stringBuilder.toString());
+
+        } catch (SheetNotSupportedException e) {
+            e.printStackTrace();
+        } catch (OutOfMemoryError e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     public static void TestComparisonStat(PrintWriter statPW, String filePath) {
         boolean inRowCompression = false;
         try {
@@ -142,7 +181,7 @@ public class MainTestUtil {
             result = depCompGraph.getDependents(mostDeps.first);
             mostDepCompLookupSize = result.size();
             mostDepCompLookupTime = System.currentTimeMillis() - start;
-            processedResult = depCompGraph.postProcessDependents(result);
+            processedResult = RefUtils.postProcessRefSet(result);
             mostDepCompPostProcesedLookupSize = processedResult.size();
             mostDepCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
@@ -152,7 +191,7 @@ public class MainTestUtil {
             result = depNoCompGraph.getDependents(mostDeps.first);
             mostDepNoCompLookupSize = result.size();
             mostDepNoCompLookupTime = System.currentTimeMillis() - start;
-            processedResult = depNoCompGraph.postProcessDependents(result);
+            processedResult = RefUtils.postProcessRefSet(result);
             mostDepNoCompPostProcesedLookupSize = processedResult.size();
             mostDepNoCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
@@ -163,7 +202,7 @@ public class MainTestUtil {
             result = depCompGraph.getDependents(longestDeps.first);
             longestDepCompLookupSize = result.size();
             longestDepCompLookupTime = System.currentTimeMillis() - start;
-            processedResult = depCompGraph.postProcessDependents(result);
+            processedResult = RefUtils.postProcessRefSet(result);
             longestDepCompPostProcesedLookupSize = processedResult.size();
             longestDepCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
@@ -173,7 +212,7 @@ public class MainTestUtil {
             result = depNoCompGraph.getDependents(longestDeps.first);
             longestDepNoCompLookupSize = result.size();
             longestDepNoCompLookupTime = System.currentTimeMillis() - start;
-            processedResult = depNoCompGraph.postProcessDependents(result);
+            processedResult = RefUtils.postProcessRefSet(result);
             longestDepNoCompPostProcesedLookupSize = processedResult.size();
             longestDepNoCompPostProcessedLookupTime = System.currentTimeMillis() - start;
 
