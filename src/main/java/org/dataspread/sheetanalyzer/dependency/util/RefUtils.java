@@ -60,7 +60,8 @@ public class RefUtils {
         for (int i = 0; i < colChars.length; i++) {
             colIdx += (colChars[i] - 'a') * Math.pow(26, colChars.length - i - 1);
         }
-        colIdx -= 1;
+        // colIdx -= 1;
+        // System.out.println("Input: " + cellStr + "Get: " + rowIdx + " " + colIdx);
         return new RefImpl(rowIdx, colIdx);
     }
 

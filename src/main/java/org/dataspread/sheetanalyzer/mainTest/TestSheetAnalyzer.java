@@ -8,30 +8,32 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class TestSheetAnalyzer {
 
-    static String numRefDistFile = "enron_numRefDist.csv";
-    static String numEdgesFile = "enron_stat.csv";
+    static String numRefDistFile = "numRefDist.csv";
+    static String numEdgesFile = "stat.csv";
 
     public static void main(String[] args) {
 
-        if (args.length != 2) {
-            System.out.println("Need two arguments: \n" +
+        if (args.length != 4) {
+            System.out.println("Need four arguments: \n" +
                     "1) a folder for xls(x) files or a xls(x) file \n" +
-                    "2) a folder for stat output \n");
+                    "2) a folder for stat output \n" +
+                    "3) TACO or NoComp \n" +
+                    "4) isDollar True or False \n"
+            );
             System.exit(-1);
         }
 
         boolean inRowCompression = false;
-        boolean isCompression = true;
+        boolean isCompression = args[2].equals("TACO");
+        boolean isDollar = args[3].equals("True");
 
         String statFolder = args[1];
         String numRefDistPath = statFolder + "/" + numRefDistFile;
         String statPath = statFolder + "/" + numEdgesFile;
-
         HashMap<Integer, Long> numRefDist = new HashMap<>();
 
         File inputFile = new File(args[0]);
@@ -44,8 +46,8 @@ public class TestSheetAnalyzer {
 
         if (fileArray != null) {
             int counter = 0;
-            try (PrintWriter distPW = new PrintWriter(new FileWriter(numRefDistPath, true));
-                 PrintWriter statPW = new PrintWriter(new FileWriter(statPath, true))) {
+            try (PrintWriter distPW = new PrintWriter(new FileWriter(numRefDistPath, false));
+                 PrintWriter statPW = new PrintWriter(new FileWriter(statPath, false))) {
 
                 // Write headers in stat
                 StringBuilder stringBuilder = new StringBuilder();
@@ -86,7 +88,8 @@ public class TestSheetAnalyzer {
                             fileArray.length + "]: "+ "processing " + file.getName());
                     String filePath = file.getAbsolutePath();
                     try {
-                        SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression);
+                        SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
+                                isCompression, isDollar);
 
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
 
@@ -96,11 +99,7 @@ public class TestSheetAnalyzer {
                             numRefDist.put(numRefs, existingCount + count);
                         });
 
-                    } catch (SheetNotSupportedException e) {
-                        System.out.println(e.getMessage());
-                    } catch (OutOfMemoryError e) {
-                        System.out.println(e.getMessage());
-                    } catch (NullPointerException e) {
+                    } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());
                     }
                 }

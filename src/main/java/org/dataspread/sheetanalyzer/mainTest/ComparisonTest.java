@@ -14,7 +14,6 @@ public class ComparisonTest {
     static String numEdgesFile = "new_test_compare_stat.csv";
 
     public static void main(String[] args) {
-
         if (args.length != 2) {
             System.out.println("Need two arguments: \n" +
                     "1) a folder for xls(x) files or a xls(x) file \n" +

@@ -114,12 +114,12 @@ public class MainTestUtil {
     }
 
     public static void TestRefDependent(PrintWriter statPW, String fileDir, String fileName,
-                                        String refLoc, boolean isCompression) {
+                                        String refLoc, boolean isCompression, boolean isDollar) {
         boolean inRowCompression = false;
         String filePath = fileDir + "/" + fileName;
 
         try {
-            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression);
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar);
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
 
@@ -129,9 +129,23 @@ public class MainTestUtil {
 
             long start = System.currentTimeMillis();
             result = depGraph.getDependents(targetRef);
+
+            System.out.println("Original Result: ");
+            for (Ref r: result) {
+                System.out.print(r + " ");
+            }
+            System.out.println();
+
             lookupSize = result.size();
             lookupTime = System.currentTimeMillis() - start;
             processedResult = RefUtils.postProcessRefSet(result);
+
+            System.out.println("Processed Result: ");
+            for (Ref r: processedResult) {
+                System.out.print(r + " ");
+            }
+            System.out.println();
+
             lookupPostSize = processedResult.size();
             lookupPostTime = System.currentTimeMillis() - start;
 
@@ -146,7 +160,7 @@ public class MainTestUtil {
 
         } catch (SheetNotSupportedException e) {
             e.printStackTrace();
-        } catch (OutOfMemoryError e) {
+        } catch (OutOfMemoryError | NullPointerException e) {
             System.out.println(e.getMessage());
         }
     }

@@ -29,6 +29,8 @@ public class DependencyGraphTACO implements DependencyGraph {
     public boolean dollar_signed = false;
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
+    private final DollarSignedCompressInfoComparator dollarSignedCompressInfoComparator =
+            new DollarSignedCompressInfoComparator();
 
     public HashMap<Ref, List<RefWithMeta>> getCompressedGraph() {
         return precToDepList;
@@ -48,19 +50,24 @@ public class DependencyGraphTACO implements DependencyGraph {
         AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
         Queue<Ref> updateQueue = new LinkedList<>();
         updateQueue.add(precUpdate);
+
         while (!updateQueue.isEmpty()) {
             Ref updateRef = updateQueue.remove();
             Iterator<Ref> refIter = findOverlappingRefs(updateRef);
+            Set<Ref> usedPrec = new HashSet<>();
             while (refIter.hasNext()) {
                 Ref precRef = refIter.next();
-                Ref realUpdateRef = updateRef.getOverlap(precRef);
-                findDeps(precRef).forEach(depRefWithMeta -> {
-                    Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
-                            depRefWithMeta.getEdgeMeta(), realUpdateRef);
-                    depUpdateRefSet.forEach(depUpdateRef -> {
-                        updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
+                if (!usedPrec.contains(precRef)) {
+                    usedPrec.add(precRef);
+                    Ref realUpdateRef = updateRef.getOverlap(precRef);
+                    findDeps(precRef).forEach(depRefWithMeta -> {
+                        Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
+                                depRefWithMeta.getEdgeMeta(), realUpdateRef);
+                        depUpdateRefSet.forEach(depUpdateRef -> {
+                            updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
+                        });
                     });
-                });
+                }
             }
         }
     }
@@ -151,9 +158,20 @@ public class DependencyGraphTACO implements DependencyGraph {
             insertMemEntry(precedent, dependent,
                     new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
         } else {
-            CompressInfo selectedInfo =
-                    Collections.min(compressInfoList, compressInfoComparator);
-            updateOneCompressEntry(selectedInfo);
+            if (this.dollar_signed) {
+                CompressInfo selectedInfo =
+                        Collections.min(compressInfoList, dollarSignedCompressInfoComparator);
+                CompressInfo oldSelectedInfo =
+                        Collections.min(compressInfoList, compressInfoComparator);
+                //System.out.println(selectedInfo.compType + " " + selectedInfo.candPrec);
+                //System.out.println(oldSelectedInfo.compType + " " + oldSelectedInfo.candPrec);
+                updateOneCompressEntry(selectedInfo);
+            } else {
+                CompressInfo selectedInfo =
+                        Collections.min(compressInfoList, compressInfoComparator);
+                updateOneCompressEntry(selectedInfo);
+            }
+
         }
     }
 
@@ -504,10 +522,12 @@ public class DependencyGraphTACO implements DependencyGraph {
         if (!prec.checkLeftUpColumnDollar() && !prec.checkLeftUpRowDollar()) {
             return true;
         }
-        if (prec.checkLeftUpColumnDollar() && (direction == Direction.TODOWN || direction == Direction.TOUP)) {
+        if (prec.checkLeftUpColumnDollar() && !prec.checkLeftUpRowDollar() &&
+                (direction == Direction.TODOWN || direction == Direction.TOUP)) {
             return true;
         }
-        if (prec.checkLeftUpRowDollar() && (direction == Direction.TOLEFT || direction == Direction.TORIGHT)) {
+        if (prec.checkLeftUpRowDollar() && !prec.checkLeftUpColumnDollar() &&
+                (direction == Direction.TOLEFT || direction == Direction.TORIGHT)) {
             return true;
         }
         return false;
@@ -517,10 +537,12 @@ public class DependencyGraphTACO implements DependencyGraph {
         if (!prec.checkRightDownColumnDollar() && !prec.checkRightDownRowDollar()) {
             return true;
         }
-        if (prec.checkRightDownColumnDollar() && (direction == Direction.TODOWN || direction == Direction.TOUP)) {
+        if (prec.checkRightDownColumnDollar() && !prec.checkRightDownRowDollar() &&
+                (direction == Direction.TODOWN || direction == Direction.TOUP)) {
             return true;
         }
-        if (prec.checkRightDownRowDollar() && (direction == Direction.TOLEFT || direction == Direction.TORIGHT)) {
+        if (prec.checkRightDownRowDollar() && !prec.checkRightDownColumnDollar() &&
+                (direction == Direction.TOLEFT || direction == Direction.TORIGHT)) {
             return true;
         }
         return false;
@@ -670,8 +692,65 @@ public class DependencyGraphTACO implements DependencyGraph {
             else if (infoB.isDuplicate) return 1;
             else {
                 int directionResult = infoA.direction.compareTo(infoB.direction);
-                if (directionResult != 0) return directionResult;
-                else {
+                if (directionResult != 0) {
+                    return directionResult;
+                } else {
+                    return infoA.compType.compareTo(infoB.compType);
+                }
+            }
+        }
+    }
+
+    private class DollarSignedCompressInfoComparator implements Comparator<CompressInfo> {
+        @Override
+        public int compare(CompressInfo infoA, CompressInfo infoB) {
+            if (infoA.isDuplicate) return -1;
+            else if (infoB.isDuplicate) return 1;
+            else {
+                int directionResult = infoA.direction.compareTo(infoB.direction);
+                if (directionResult != 0) {
+                    return directionResult;
+                } else {
+                    // prec and direction must be the same
+                    Ref prec = infoA.prec;
+                    Direction direction = infoA.direction;
+                    if (checkLeftUpRelative(prec, direction)) {
+                        if (checkRightDownRelative(prec, direction)) {
+                            // RR
+                            if (infoA.compType == PatternType.TYPEONE || infoA.compType == PatternType.TYPEZERO) {
+                                return -1;
+                            }
+                            if (infoB.compType == PatternType.TYPEONE || infoB.compType == PatternType.TYPEZERO) {
+                                return 1;
+                            }
+                        } else {
+                            // RF
+                            if (infoA.compType == PatternType.TYPETWO) {
+                                return -1;
+                            }
+                            if (infoB.compType == PatternType.TYPETWO) {
+                                return 1;
+                            }
+                        }
+                    } else {
+                        if (checkRightDownRelative(prec, direction)) {
+                            // FR
+                            if (infoA.compType == PatternType.TYPETHREE) {
+                                return -1;
+                            }
+                            if (infoB.compType == PatternType.TYPETHREE) {
+                                return 1;
+                            }
+                        } else {
+                            // FF
+                            if (infoA.compType == PatternType.TYPEFOUR) {
+                                return -1;
+                            }
+                            if (infoB.compType == PatternType.TYPEFOUR) {
+                                return 1;
+                            }
+                        }
+                    }
                     return infoA.compType.compareTo(infoB.compType);
                 }
             }

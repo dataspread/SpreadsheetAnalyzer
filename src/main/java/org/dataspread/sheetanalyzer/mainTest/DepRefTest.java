@@ -1,11 +1,6 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.apache.poi.ss.usermodel.*;
-import org.dataspread.sheetanalyzer.SheetAnalyzer;
-import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
-import org.dataspread.sheetanalyzer.parser.POIParser;
-import org.dataspread.sheetanalyzer.util.SheetData;
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
 import java.io.*;
 import java.util.HashMap;
@@ -13,17 +8,19 @@ import java.util.HashMap;
 
 public class DepRefTest {
     static String filelistColumnName = "File name";
+    static boolean isDollar = false;
 
     public static void main(String[] args) throws IOException {
 
         if (!checkArgs(args)) {
-            String warnings = "To run DepRefest, we need 6 arguments: \n" +
+            String warnings = "To run DepRefest, we need 7 arguments: \n" +
                     "1) Path of a xls(x) files containing 'File name' and 'Def Ref' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
                     "4) File directory \n" +
-                    "5) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
-                    "6) TACO or NoComp \n";
+                    "5) File name ('all' for all files in dir) \n" +
+                    "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
+                    "7) TACO or NoComp \n";
             System.out.println(warnings);
             System.exit(-1);
         }
@@ -32,9 +29,10 @@ public class DepRefTest {
         String sheetName = args[1];
         String outputPath = args[2];
         String fileDir = args[3];
+        String targetFileName = args[4];
 
-        boolean isMostDep = args[4].equals("M") || args[4].equals("m");
-        boolean isCompression = args[5].equals("TACO");
+        boolean isMostDep = args[5].equals("M") || args[5].equals("m");
+        boolean isCompression = args[6].equals("TACO");
         String modelName = args[5];
         String targetColumn = "Dep Ref";
         if (isMostDep) {
@@ -57,19 +55,27 @@ public class DepRefTest {
             String stringBuilder = "fileName" + "," +
                     targetColumn + "," +
                     modelName + "LookupSize" + "," +
-                    modelName + "LookUpTime" + "," +
+                    modelName + "LookupTime" + "," +
                     modelName + "PostProcessedLookupSize" + "," +
                     modelName + "PostProcessedLookupTime" + "\n";
             statPW.write(stringBuilder);
 
-            for (String fileName: fileNameDepRefMap.keySet()) {
-                String depLoc = fileNameDepRefMap.get(fileName);
-                counter += 1;
-                if (counter >= 5) {
-                    break;
+            if (!targetFileName.equals("all")) {
+                if (fileNameDepRefMap.containsKey(targetFileName)) {
+                    String depLoc = fileNameDepRefMap.get(targetFileName);
+                    System.out.println("[1/1]: processing " + targetFileName);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar);
+                } else {
+                    System.out.println("Cannot find target filename in DepRefMap");
+                    System.exit(-1);
                 }
-                System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression);
+            } else {
+                for (String fileName: fileNameDepRefMap.keySet()) {
+                    String depLoc = fileNameDepRefMap.get(fileName);
+                    counter += 1;
+                    System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression, isDollar);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -120,6 +126,9 @@ public class DepRefTest {
             if (row != null) {
                 Cell fileNameCell = row.getCell(fileColumnIndex);
                 Cell depCell = row.getCell(depColumnIndex);
+                if (depCell == null) {
+                    System.out.println(i + ", " + depColumnIndex);
+                }
                 if (fileNameCell.getCellType() == CellType.STRING) {
                     fileName = fileNameCell.getStringCellValue();
                 }
@@ -136,21 +145,25 @@ public class DepRefTest {
     }
 
     private static boolean checkArgs(String[] args) {
-        if (args.length != 6) {
+        if (args.length != 7) {
+            System.out.println("Incorrect length!");
             return false;
         }
 
         File inputFile = new File(args[0]);
         File fileDir = new File(args[3]);
-        if (!inputFile.exists() || !fileDir.exists()) {
+        if (!fileDir.exists() || !inputFile.exists()) {
+            System.out.println("Wrong file path!");
             return false;
         }
 
-        if (!(args[4].equals("m") || args[4].equals("M") || args[4].equals("L") || args[4].equals("l"))) {
+        if (!(args[5].equals("m") || args[5].equals("M") || args[5].equals("L") || args[5].equals("l"))) {
+            System.out.println("Wrong dep ref type!");
             return false;
         }
 
-        if (!(args[5].equals("TACO") || args[5].equals("NoComp"))) {
+        if (!(args[6].equals("TACO") || args[6].equals("NoComp"))) {
+            System.out.println("Wrong model type!");
             return false;
         }
 

@@ -34,7 +34,12 @@ public class SheetAnalyzer {
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException {
+                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException{
+        this(filePath, inRowCompression, isCompression, false);
+    }
+
+    public SheetAnalyzer(String filePath,
+                         boolean inRowCompression, boolean isCompression, boolean isDollar) throws SheetNotSupportedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
 
@@ -47,7 +52,7 @@ public class SheetAnalyzer {
         depGraphMap = new HashMap<>();
 
         if (this.isCompression) {
-            genDepGraphFromSheetData(depGraphMap);
+            genDepGraphFromSheetData(depGraphMap, isDollar);
         } else {
             genNoCompDepGraphFromSheetData(depGraphMap);
         }
@@ -76,11 +81,11 @@ public class SheetAnalyzer {
         });
     }
 
-    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
+    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap, boolean isDollar) {
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
 
-            depGraph.dollar_signed = true;
+            depGraph.dollar_signed = isDollar;
 
             depGraph.setInRowCompression(inRowCompression);
             depGraph.setDoCompression(true);
