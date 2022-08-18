@@ -13,7 +13,7 @@ public class DepRefTest {
     public static void main(String[] args) throws IOException {
 
         if (!checkArgs(args)) {
-            String warnings = "To run DepRefest, we need 7 arguments: \n" +
+            String warnings = "To run DepRefTest, we need 7 arguments: \n" +
                     "1) Path of a xls(x) files containing 'File name' and 'Def Ref' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
@@ -33,7 +33,7 @@ public class DepRefTest {
 
         boolean isMostDep = args[5].equals("M") || args[5].equals("m");
         boolean isCompression = args[6].equals("TACO");
-        String modelName = args[5];
+        String modelName = args[6];
         String targetColumn = "Dep Ref";
         if (isMostDep) {
             targetColumn = "Max " + targetColumn;
@@ -50,7 +50,7 @@ public class DepRefTest {
         }
 
         int counter = 0;
-        try (PrintWriter statPW = new PrintWriter(new FileWriter(outputPath, false))) {
+        try (PrintWriter statPW = new PrintWriter(new FileWriter(outputPath, true))) {
             // Write header in output file
             String stringBuilder = "fileName" + "," +
                     targetColumn + "," +

@@ -11,12 +11,7 @@ import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.RefImpl;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Set;
 
 public class MainTestUtil {
@@ -129,22 +124,9 @@ public class MainTestUtil {
 
             long start = System.currentTimeMillis();
             result = depGraph.getDependents(targetRef);
-
-            System.out.println("Original Result: ");
-            for (Ref r: result) {
-                System.out.print(r + " ");
-            }
-            System.out.println();
-
             lookupSize = result.size();
             lookupTime = System.currentTimeMillis() - start;
             processedResult = RefUtils.postProcessRefSet(result);
-
-            System.out.println("Processed Result: ");
-            for (Ref r: processedResult) {
-                System.out.print(r + " ");
-            }
-            System.out.println();
 
             lookupPostSize = processedResult.size();
             lookupPostTime = System.currentTimeMillis() - start;
@@ -258,9 +240,7 @@ public class MainTestUtil {
                 stringBuilder.append("\n");
                 statPW.write(stringBuilder.toString());
             }
-        } catch (SheetNotSupportedException e) {
-            System.out.println(e.getMessage());
-        } catch (OutOfMemoryError e) {
+        } catch (SheetNotSupportedException | OutOfMemoryError e) {
             System.out.println(e.getMessage());
         }
     }

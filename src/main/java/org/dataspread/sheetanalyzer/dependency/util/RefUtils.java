@@ -78,7 +78,7 @@ public class RefUtils {
     }
 
     private static void mergeRefArray(ArrayList<Ref> refArr, Set<Ref> refSet, boolean isHorizontal) {
-        if (isHorizontal) {
+        if (!isHorizontal) {
             Collections.sort(refArr, new Comparator<Ref>() {
                 @Override
                 public int compare(Ref o1, Ref o2) {
@@ -93,10 +93,10 @@ public class RefUtils {
             Collections.sort(refArr, new Comparator<Ref>() {
                 @Override
                 public int compare(Ref o1, Ref o2) {
-                    if (o1.getRow() != o2.getRow()) {
-                        return o1.getRow() - o2.getRow();
-                    } else {
+                    if (o1.getColumn() != o2.getColumn()) {
                         return o1.getColumn() - o2.getColumn();
+                    } else {
+                        return o1.getRow() - o2.getRow();
                     }
                 }
             });

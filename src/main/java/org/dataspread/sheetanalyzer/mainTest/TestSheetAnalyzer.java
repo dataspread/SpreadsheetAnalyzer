@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class TestSheetAnalyzer {
 
     static String numRefDistFile = "numRefDist.csv";
-    static String numEdgesFile = "stat.csv";
+    static String numEdgesFile = "new_tested_TACO_Dollars_stat_2.csv";
 
     public static void main(String[] args) {
 
@@ -90,7 +90,6 @@ public class TestSheetAnalyzer {
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
                                 isCompression, isDollar);
-
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
 
                         HashMap<Integer, Integer> numRefDistPerSheet = sheetAnalyzer.getRefDistribution();

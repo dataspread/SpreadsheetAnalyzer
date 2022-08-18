@@ -22,6 +22,29 @@ public class DependencyGraphTACO implements DependencyGraph {
     /** Map<dependant, precedent> */
     protected HashMap<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
     protected HashMap<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
+
+    protected Comparator<RefWithMeta> horizontalCp = new Comparator<RefWithMeta>() {
+        @Override
+        public int compare(RefWithMeta o1, RefWithMeta o2) {
+            if (o1.getRef().getRow() != o2.getRef().getRow()) {
+                return o1.getRef().getRow() - o2.getRef().getRow();
+            } else {
+                return o1.getRef().getColumn() - o2.getRef().getColumn();
+            }
+        }
+    };
+
+    protected Comparator<RefWithMeta> verticalCp = new Comparator<RefWithMeta>() {
+        @Override
+        public int compare(RefWithMeta o1, RefWithMeta o2) {
+            if (o1.getRef().getColumn() != o2.getRef().getColumn()) {
+                return o1.getRef().getColumn() - o2.getRef().getColumn();
+            } else {
+                return o1.getRef().getRow() - o2.getRef().getRow();
+            }
+        }
+    };
+
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
 
     private boolean doCompression = true;
@@ -64,7 +87,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                         Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                                 depRefWithMeta.getEdgeMeta(), realUpdateRef);
                         depUpdateRefSet.forEach(depUpdateRef -> {
-                            updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
+                                updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
                         });
                     });
                 }
@@ -161,10 +184,6 @@ public class DependencyGraphTACO implements DependencyGraph {
             if (this.dollar_signed) {
                 CompressInfo selectedInfo =
                         Collections.min(compressInfoList, dollarSignedCompressInfoComparator);
-                CompressInfo oldSelectedInfo =
-                        Collections.min(compressInfoList, compressInfoComparator);
-                //System.out.println(selectedInfo.compType + " " + selectedInfo.candPrec);
-                //System.out.println(oldSelectedInfo.compType + " " + oldSelectedInfo.candPrec);
                 updateOneCompressEntry(selectedInfo);
             } else {
                 CompressInfo selectedInfo =
@@ -173,6 +192,159 @@ public class DependencyGraphTACO implements DependencyGraph {
             }
 
         }
+    }
+
+    public void postMerge() {
+        if (!doCompression) {
+            return;
+        }
+
+        postMergeFromPrec();
+        postMergeFromDep();
+    }
+
+    private void postMergeFromPrec() {
+        ArrayList<Ref> precArray = new ArrayList<>(precToDepList.keySet());
+        for (Ref prec: precArray) {
+            List<RefWithMeta> depLists = precToDepList.get(prec);
+            Collections.sort(depLists, horizontalCp);
+            int idx = 0;
+            while (idx < depLists.size()) {
+                RefWithMeta mergedRef = depLists.get(idx);
+                int nextIdx = idx + 1;
+                while (nextIdx < depLists.size()) {
+                    RefWithMeta refNext = depLists.get(nextIdx);
+                    if (!isHorizontalMergable(mergedRef, refNext)) {
+                        break;
+                    }
+                    mergedRef = mergeRef(prec, mergedRef, refNext);
+                    nextIdx += 1;
+                }
+                idx = nextIdx;
+            }
+        }
+
+        precArray = new ArrayList<>(precToDepList.keySet());
+        for (Ref prec: precArray) {
+            List<RefWithMeta> depLists = precToDepList.get(prec);
+            Collections.sort(depLists, verticalCp);
+            int idx = 0;
+            while (idx < depLists.size()) {
+                RefWithMeta mergedRef = depLists.get(idx);
+                int nextIdx = idx + 1;
+                while (nextIdx < depLists.size()) {
+                    RefWithMeta refNext = depLists.get(nextIdx);
+                    if (!isVerticalMergable(mergedRef, refNext)) {
+                        break;
+                    }
+                    mergedRef = mergeRef(prec, mergedRef, refNext);
+                    nextIdx += 1;
+                }
+                idx = nextIdx;
+            }
+        }
+    }
+
+    private void postMergeFromDep() {
+        ArrayList<Ref> depArray = new ArrayList<>(depToPrecList.keySet());
+        for (Ref dep: depArray) {
+            List<RefWithMeta> precLists = depToPrecList.get(dep);
+            Collections.sort(precLists, horizontalCp);
+            int idx = 0;
+            while (idx < precLists.size()) {
+                RefWithMeta mergedRef = precLists.get(idx);
+                int nextIdx = idx + 1;
+                while (nextIdx < precLists.size()) {
+                    RefWithMeta refNext = precLists.get(nextIdx);
+                    if (!isHorizontalMergable(mergedRef, refNext)) {
+                        break;
+                    }
+                    mergedRef = mergeDefRef(dep, mergedRef, refNext);
+                    nextIdx += 1;
+                }
+                idx = nextIdx;
+            }
+        }
+
+        depArray = new ArrayList<>(depToPrecList.keySet());
+        for (Ref dep: depArray) {
+            List<RefWithMeta> precLists = depToPrecList.get(dep);
+            Collections.sort(precLists, verticalCp);
+            int idx = 0;
+            while (idx < precLists.size()) {
+                RefWithMeta mergedRef = precLists.get(idx);
+                int nextIdx = idx + 1;
+                while (nextIdx < precLists.size()) {
+                    RefWithMeta refNext = precLists.get(nextIdx);
+                    if (!isVerticalMergable(mergedRef, refNext)) {
+                        break;
+                    }
+                    mergedRef = mergeDefRef(dep, mergedRef, refNext);
+                    nextIdx += 1;
+                }
+                idx = nextIdx;
+            }
+        }
+    }
+
+    private RefWithMeta mergeRef(Ref prec, RefWithMeta ref, RefWithMeta refNext) {
+        Ref newPrec = prec.getBoundingBox(prec);
+        Ref newDep = refNext.getRef().getBoundingBox(ref.getRef());
+        deleteMemEntry(prec, ref.getRef(), ref.getEdgeMeta());
+        deleteMemEntry(prec, refNext.getRef(), refNext.getEdgeMeta());
+        Pair<Offset, Offset> offsetPair = computeOffset(newPrec, newDep, ref.getPatternType());
+        insertMemEntry(newPrec, newDep, new EdgeMeta(ref.getPatternType(), offsetPair.first, offsetPair.second));
+        return new RefWithMeta(newDep, new EdgeMeta(ref.getPatternType(), offsetPair.first, offsetPair.second));
+    }
+
+    private RefWithMeta mergeDefRef(Ref dep, RefWithMeta ref, RefWithMeta refNext) {
+        Ref newDep = dep.getBoundingBox(dep);
+        Ref newPrec = refNext.getRef().getBoundingBox(ref.getRef());
+        deleteMemEntry(ref.getRef(), dep, ref.getEdgeMeta());
+        deleteMemEntry(refNext.getRef(), dep, refNext.getEdgeMeta());
+        Pair<Offset, Offset> offsetPair = computeOffset(newPrec, newDep, ref.getPatternType());
+        insertMemEntry(newPrec, newDep, new EdgeMeta(ref.getPatternType(), offsetPair.first, offsetPair.second));
+        return new RefWithMeta(newPrec, new EdgeMeta(ref.getPatternType(), offsetPair.first, offsetPair.second));
+    }
+
+    private boolean isVerticalMergable(RefWithMeta ref, RefWithMeta refNext) {
+        if (ref == null || refNext == null) {
+            return false;
+        }
+        if (ref.getPatternType() != refNext.getPatternType()) {
+            return false;
+        }
+        if (ref.getPatternType() != PatternType.TYPEFOUR) {
+            return false;
+        }
+        // Same column
+        if (ref.getRef().getColumn() == refNext.getRef().getColumn() &&
+                ref.getRef().getLastColumn() == refNext.getRef().getLastColumn()) {
+            if (refNext.getRef().getRow() <= ref.getRef().getLastRow() + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isHorizontalMergable(RefWithMeta ref, RefWithMeta refNext) {
+        if (ref == null || refNext == null) {
+            return false;
+        }
+        if (ref.getPatternType() != refNext.getPatternType()) {
+            return false;
+        }
+        if (ref.getPatternType() != PatternType.TYPEFOUR) {
+            return false;
+        }
+        // Same row
+        if (ref.getRef().getRow() == refNext.getRef().getRow() &&
+                ref.getRef().getLastRow() == refNext.getRef().getLastRow()) {
+            if (refNext.getRef().getColumn() <= ref.getRef().getLastColumn() + 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void clearDependents(Ref delDep) {
@@ -233,7 +405,6 @@ public class DependencyGraphTACO implements DependencyGraph {
         List<RefWithMeta> precList = depToPrecList.getOrDefault(dep, new LinkedList<>());
         precList.add(new RefWithMeta(prec, edgeMeta));
         depToPrecList.put(dep, precList);
-
         _rectToRef = _rectToRef.add(prec, RefUtils.refToRect(prec));
         _rectToRef = _rectToRef.add(dep, RefUtils.refToRect(dep));
     }
@@ -250,7 +421,9 @@ public class DependencyGraphTACO implements DependencyGraph {
         List<RefWithMeta> precList = depToPrecList.get(dep);
         if (precList != null) {
             precList.remove(new RefWithMeta(prec, edgeMeta));
-            if (precList.isEmpty()) depToPrecList.remove(dep);
+            if (precList.isEmpty()) {
+                depToPrecList.remove(dep);
+            }
         }
 
         _rectToRef = _rectToRef.delete(prec, RefUtils.refToRect(prec));
@@ -623,13 +796,25 @@ public class DependencyGraphTACO implements DependencyGraph {
                 }
             }
         }
-        // System.out.println(compressType);
         return compressType;
     }
 
     private boolean isSubsume(Ref large, Ref small) {
         if (large.getOverlap(small) == null) return false;
         return large.getOverlap(small).equals(small);
+    }
+
+    private Iterable<Ref> findAdjacency(Ref ref, int gapSize) {
+        LinkedList<Ref> res = new LinkedList<>();
+        int shift_step = gapSize + DEAULT_SHIFT_STEP;
+        Arrays.stream(Direction.values()).filter(direction -> direction != Direction.NODIRECTION)
+                .forEach(direction ->
+                        findOverlappingRefs(shiftRef(ref, direction, shift_step))
+                                .forEachRemaining(adjRef -> {
+                                    if (isValidAdjacency(adjRef, ref, shift_step)) res.addLast(adjRef); // valid adjacency
+                                })
+                );
+        return res;
     }
 
     private Iterable<Ref> findOverlapAndAdjacency(Ref ref, int gapSize) {
@@ -717,24 +902,26 @@ public class DependencyGraphTACO implements DependencyGraph {
                     if (checkLeftUpRelative(prec, direction)) {
                         if (checkRightDownRelative(prec, direction)) {
                             // RR
-                            if (infoA.compType == PatternType.TYPEONE || infoA.compType == PatternType.TYPEZERO) {
-                                return -1;
-                            }
-                            if (infoB.compType == PatternType.TYPEONE || infoB.compType == PatternType.TYPEZERO) {
-                                return 1;
-                            }
+                            return infoA.compType.compareTo(infoB.compType);
                         } else {
                             // RF
+                            if (infoA.compType == PatternType.TYPETWO && infoB.compType == PatternType.TYPETWO) {
+                                return 0;
+                            }
                             if (infoA.compType == PatternType.TYPETWO) {
                                 return -1;
                             }
                             if (infoB.compType == PatternType.TYPETWO) {
                                 return 1;
                             }
+
                         }
                     } else {
                         if (checkRightDownRelative(prec, direction)) {
                             // FR
+                            if (infoA.compType == PatternType.TYPETHREE && infoB.compType == PatternType.TYPETHREE) {
+                                return 0;
+                            }
                             if (infoA.compType == PatternType.TYPETHREE) {
                                 return -1;
                             }
@@ -743,6 +930,9 @@ public class DependencyGraphTACO implements DependencyGraph {
                             }
                         } else {
                             // FF
+                            if (infoA.compType == PatternType.TYPEFOUR && infoB.compType == PatternType.TYPEFOUR) {
+                                return 0;
+                            }
                             if (infoA.compType == PatternType.TYPEFOUR) {
                                 return -1;
                             }

@@ -105,6 +105,7 @@ public class SheetAnalyzer {
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
+            depGraph.postMerge();
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();
         });
