@@ -169,9 +169,18 @@ public class DependencyGraphNoComp implements DependencyGraph {
 
     public void clearDependents(Ref delDep) {
         assert (delDep.getRow() == delDep.getLastRow()) && (delDep.getColumn() == delDep.getLastColumn());
-        for (Ref depRef: getNeighbors(delDep)) {
-            for (Ref precRef: getDirectPrecedent(depRef)) {
+        Iterator<Ref> neighborIter = getNeighbors(delDep).iterator();
+        while (neighborIter.hasNext()) {
+            Ref depRef = neighborIter.next();
+            Iterator<Ref> precIter = getDirectPrecedent(depRef).iterator();
+            List<Ref> precList = new ArrayList<>();
+            while (precIter.hasNext()) {
+                precList.add(precIter.next());
+            }
+            for (int i = 0; i < precList.size(); i++) {
+                Ref precRef = precList.get(i);
                 deleteMemEntry(precRef, depRef);
+                precList.remove(precRef);
             }
         }
     }

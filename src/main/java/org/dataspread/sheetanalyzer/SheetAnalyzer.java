@@ -28,6 +28,7 @@ public class SheetAnalyzer {
     private long numVertices = 0;
     private final long maxNumQueries = 100000;
     private final long maxUnChangeNumQueries = 10000;
+    private long graphBuildTimeCost = 0;
 
     public SheetAnalyzer(String filePath) throws SheetNotSupportedException {
         this(filePath, false, true);
@@ -51,12 +52,19 @@ public class SheetAnalyzer {
 
         depGraphMap = new HashMap<>();
 
+        long start = System.currentTimeMillis();
         if (this.isCompression) {
             genDepGraphFromSheetData(depGraphMap, isDollar);
         } else {
             genNoCompDepGraphFromSheetData(depGraphMap);
         }
+        long end = System.currentTimeMillis();
+        graphBuildTimeCost = end - start;
     }
+
+    public long getGraphBuildTimeCost() { return graphBuildTimeCost; }
+
+    public HashMap<String, SheetData> getSheetDataMap() { return sheetDataMap; }
 
     public boolean getIsCompression() {
         return isCompression;
@@ -105,7 +113,7 @@ public class SheetAnalyzer {
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
-            depGraph.postMerge();
+            // depGraph.postMerge();
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();
         });

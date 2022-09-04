@@ -1,26 +1,22 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.apache.poi.ss.usermodel.*;
-
 import java.io.*;
 import java.util.HashMap;
 
-
-public class DepRefTest {
+public class GraphModifyTest {
     static String filelistColumnName = "File name";
     static boolean isDollar = true;
 
     public static void main(String[] args) throws IOException {
-
-        if (!checkArgs(args)) {
-            String warnings = "To run DepRefTest, we need 7 arguments: \n" +
+        if(!checkArgs(args)) {
+            String warnings = "To run GraphModifyTest, we need 6 arguments: \n" +
                     "1) Path of a xls(x) file containing 'File name' and 'Def Ref' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in dir) \n" +
-                    "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
-                    "7) TACO or NoComp \n";
+                    "6) TACO or NoComp \n";
             System.out.println(warnings);
             System.exit(-1);
         }
@@ -30,16 +26,8 @@ public class DepRefTest {
         String outputPath = args[2];
         String fileDir = args[3];
         String targetFileName = args[4];
-
-        boolean isMostDep = args[5].equals("M") || args[5].equals("m");
-        boolean isCompression = args[6].equals("TACO");
-        String modelName = args[6];
-        String targetColumn = "Dep Ref";
-        if (isMostDep) {
-            targetColumn = "Max " + targetColumn;
-        } else {
-            targetColumn = "Longest " + targetColumn;
-        }
+        boolean isCompression = args[5].equals("TACO");
+        String targetColumn = "Max Dep Ref";
 
         HashMap<String, String> fileNameDepRefMap
                 = parseInputFile(inputPath, sheetName, filelistColumnName, targetColumn);
@@ -54,18 +42,15 @@ public class DepRefTest {
             // Write header in output file
             String stringBuilder = "fileName" + "," +
                     targetColumn + "," +
-                    "GraphBuildTime" + "," +
-                    modelName + "LookupSize" + "," +
-                    modelName + "LookupTime" + "," +
-                    modelName + "PostProcessedLookupSize" + "," +
-                    modelName + "PostProcessedLookupTime" + "\n";
+                    "GraphModifySize" + "," +
+                    "GraphModifyTime" + "\n";
             statPW.write(stringBuilder);
 
             if (!targetFileName.equals("all")) {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
                     String depLoc = fileNameDepRefMap.get(targetFileName);
                     System.out.println("[1/1]: processing " + targetFileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar);
                 } else {
                     System.out.println("Cannot find target filename in DepRefMap");
                     System.exit(-1);
@@ -75,7 +60,7 @@ public class DepRefTest {
                     String depLoc = fileNameDepRefMap.get(fileName);
                     counter += 1;
                     System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, fileName, depLoc, isCompression, isDollar);
                 }
             }
         } catch (IOException e) {
@@ -145,8 +130,9 @@ public class DepRefTest {
         return fileNameDepRefMap;
     }
 
+
     private static boolean checkArgs(String[] args) {
-        if (args.length != 7) {
+        if (args.length != 6) {
             System.out.println("Incorrect length!");
             return false;
         }
@@ -158,12 +144,7 @@ public class DepRefTest {
             return false;
         }
 
-        if (!(args[5].equals("m") || args[5].equals("M") || args[5].equals("L") || args[5].equals("l"))) {
-            System.out.println("Wrong dep ref type!");
-            return false;
-        }
-
-        if (!(args[6].equals("TACO") || args[6].equals("NoComp"))) {
+        if (!(args[5].equals("TACO") || args[5].equals("NoComp"))) {
             System.out.println("Wrong model type!");
             return false;
         }

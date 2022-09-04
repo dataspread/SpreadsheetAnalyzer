@@ -6,13 +6,10 @@ import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.dependency.util.RefUtils;
-import org.dataspread.sheetanalyzer.util.Pair;
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
-import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
+import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.PrintWriter;
-import java.util.Set;
+import java.util.*;
 
 public class MainTestUtil {
 
@@ -26,17 +23,21 @@ public class MainTestUtil {
         long numCompEdges = sheetAnalyzer.getNumCompEdges();
         long numCompVertices = sheetAnalyzer.getNumCompVertices();
 
-        Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
-        Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
+        //Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
+        //Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
 
         long[] numCompEdgesPerPattern = new long[PatternType.values().length];
         long[] numEdgesPerPattern = new long[PatternType.values().length];
+
+        /*
         long mostDepLookupTime = 0;
         long longestDepLookupTime = 0;
         long mostDepLookupSize = 0;
         long longestDepLookupSize = 0;
+        */
 
         if (!inRowCompression) {
+            /*
             mostDeps = sheetAnalyzer.getRefWithMostDeps();
             longestDeps = sheetAnalyzer.getRefWithLongestDepChain();
 
@@ -52,6 +53,7 @@ public class MainTestUtil {
             depGraph = sheetAnalyzer.getDependencyGraphs().get(depSheetName);
             longestDepLookupSize = depGraph.getDependents(longestDeps.first).size();
             longestDepLookupTime = System.currentTimeMillis() - start;
+            */
 
             if (sheetAnalyzer.getIsCompression()) {
                 sheetAnalyzer.getTACODepGraphs().forEach((sheetName, tacoGraph) -> {
@@ -83,8 +85,9 @@ public class MainTestUtil {
                     .append(numVertices).append(",")
                     .append(numEdges).append(",")
                     .append(numCompVertices).append(",")
-                    .append(numCompEdges);
+                    .append(numCompEdges).append(",");
             if (!inRowCompression) {
+                /*
                 stringBuilder.append(",")
                         .append(mostDeps.first.getSheetName()).append(",")
                         .append(mostDeps.first).append(",")
@@ -96,6 +99,7 @@ public class MainTestUtil {
                         .append(longestDeps.second).append(",")
                         .append(longestDepLookupTime).append(",")
                         .append(longestDepLookupSize).append(",");
+                 */
                 if (sheetAnalyzer.getIsCompression()) {
                     for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
                         stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
@@ -108,6 +112,96 @@ public class MainTestUtil {
         }
     }
 
+    public static void TestGraphModify(PrintWriter statPW, String fileDir, String fileName,
+                                       String refLoc, boolean isCompression, boolean isDollar) {
+        boolean inRowCompression = false;
+        String filePath = fileDir + "/" + fileName;
+        int modifySize = 1000;
+
+        try {
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar);
+            String sheetName = refLoc.split(":")[0];
+            Ref targetRef = RefUtils.fromStringToCell(refLoc);
+            int origRow = targetRef.getRow();
+            int origCol = targetRef.getColumn();
+            DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(sheetName);
+            SheetData sheetData = sheetAnalyzer.getSheetDataMap().get(sheetName);
+            Set<Ref> depSet = sheetData.getDepSet();
+            int maxRow = sheetData.getMaxRows();
+            int maxCol = sheetData.getMaxCols();
+
+            ArrayList<Ref> candidateDeleteRefs = new ArrayList<>();
+
+            // Same column, rows below
+            for (int row = origRow; row < maxRow; row++) {
+                if (candidateDeleteRefs.size() >= modifySize) {
+                    break;
+                }
+                Ref candRef = new RefImpl(row, origCol);
+                if (depSet.contains(candRef)) {
+                    candidateDeleteRefs.add(candRef);
+                }
+            }
+
+            // Same row, columns right
+            for (int col = origCol; col < maxCol; col++) {
+                if (candidateDeleteRefs.size() >= modifySize) {
+                    break;
+                }
+                Ref candRef = new RefImpl(origRow, col);
+                if (depSet.contains(candRef)) {
+                    candidateDeleteRefs.add(candRef);
+                }
+            }
+
+            // Same column, rows above
+            for (int row = origRow; row > 0; row--) {
+                if (candidateDeleteRefs.size() >= modifySize) {
+                    break;
+                }
+                Ref candRef = new RefImpl(row, origCol);
+                if (depSet.contains(candRef)) {
+                    candidateDeleteRefs.add(candRef);
+                }
+            }
+
+            // Same row, columns left
+            for (int col = origCol; col > 0; col--) {
+                if (candidateDeleteRefs.size() >= modifySize) {
+                    break;
+                }
+                Ref candRef = new RefImpl(origRow, col);
+                if (depSet.contains(candRef)) {
+                    candidateDeleteRefs.add(candRef);
+                }
+            }
+
+            if (candidateDeleteRefs.size() < 100) {
+                return;
+            }
+
+            long start = System.currentTimeMillis();
+            for (Ref ref: candidateDeleteRefs) {
+                depGraph.clearDependents(ref);
+            }
+            long end = System.currentTimeMillis();
+            long graphModifyTimeCost = end - start;
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(fileName).append(",")
+                    .append(refLoc).append(",")
+                    .append(candidateDeleteRefs.size()).append(",")
+                    .append(graphModifyTimeCost).append("\n");
+            statPW.write(stringBuilder.toString());
+
+        } catch (SheetNotSupportedException e) {
+            e.printStackTrace();
+        } catch (OutOfMemoryError | NullPointerException e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+
     public static void TestRefDependent(PrintWriter statPW, String fileDir, String fileName,
                                         String refLoc, boolean isCompression, boolean isDollar) {
         boolean inRowCompression = false;
@@ -115,6 +209,7 @@ public class MainTestUtil {
 
         try {
             SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar);
+            long graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
 
@@ -134,6 +229,7 @@ public class MainTestUtil {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append(fileName).append(",")
                     .append(refLoc).append(",")
+                    .append(graphBuildTime).append(",")
                     .append(lookupSize).append(",")
                     .append(lookupTime).append(",")
                     .append(lookupPostSize).append(",")

@@ -121,14 +121,18 @@ public class DependencyGraphTACO implements DependencyGraph {
         while (!updateQueue.isEmpty()) {
             Ref updateRef = updateQueue.remove();
             Iterator<Ref> refIter = findOverlappingRefs(updateRef);
+            Set<Ref> usedDep = new HashSet<>();
             while (refIter.hasNext()) {
                 Ref depRef = refIter.next();
-                Ref realUpdateRef = updateRef.getOverlap(depRef);
-                findPrecs(depRef).forEach(precRefWithMeta -> {
-                    Ref precUpdateRef = findUpdatePrecRef(depRef, precRefWithMeta.getRef(),
-                            precRefWithMeta.getEdgeMeta(), realUpdateRef, isDirectPrec);
-                    updateResult(result, isDirectPrec, resultSet, updateQueue, precUpdateRef);
-                });
+                if (!usedDep.contains(depRef)) {
+                    usedDep.add(depRef);
+                    Ref realUpdateRef = updateRef.getOverlap(depRef);
+                    findPrecs(depRef).forEach(precRefWithMeta -> {
+                        Ref precUpdateRef = findUpdatePrecRef(depRef, precRefWithMeta.getRef(),
+                                precRefWithMeta.getEdgeMeta(), realUpdateRef, isDirectPrec);
+                        updateResult(result, isDirectPrec, resultSet, updateQueue, precUpdateRef);
+                    });
+                }
             }
         }
     }
@@ -351,22 +355,43 @@ public class DependencyGraphTACO implements DependencyGraph {
         assert (delDep.getRow() == delDep.getLastRow() &&
                 delDep.getColumn() == delDep.getLastColumn());
 
-        findOverlappingRefs(delDep).forEachRemaining(depRange -> {
-            findPrecs(depRange).forEach(precRangeWithMeta -> {
-                Ref precRange = precRangeWithMeta.getRef();
-                EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
-                List<Pair<Ref, RefWithMeta>> newEdges =
-                        deleteOneCell(precRange, depRange, edgeMeta, delDep);
-                deleteMemEntry(precRange, depRange, edgeMeta);
-                newEdges.forEach(pair -> {
-                    Ref newPrec = pair.first;
-                    Ref newDep = pair.second.getRef();
-                    EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
-                    if (newDep.getType() == Ref.RefType.CELL) add(newPrec, newDep);
-                    else insertMemEntry(newPrec, newDep, newEdgeMeta);
-                });
-            });
-        });
+        Iterator<Ref> refIter = findOverlappingRefs(delDep);
+        HashSet<Ref> depRangeSet = new HashSet<>();
+        while (refIter.hasNext()) {
+            Ref depRange = refIter.next();
+            if (!depRangeSet.contains(depRange)) {
+                depRangeSet.add(depRange);
+                Iterator<RefWithMeta> precIterWithMeta = findPrecs(depRange).iterator();
+                List<RefWithMeta> precList = new ArrayList<>();
+                while (precIterWithMeta.hasNext()) {
+                    precList.add(precIterWithMeta.next());
+                }
+                HashSet<Ref> precRangeSet = new HashSet<>();
+                for (int i = 0; i < precList.size(); i++) {
+                    RefWithMeta precRangeWithMeta = precList.get(i);
+                    Ref precRange = precRangeWithMeta.getRef();
+                    if (!precRangeSet.contains(precRange)) {
+                        precRangeSet.add(precRange);
+                        EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
+                        List<Pair<Ref, RefWithMeta>> newEdges =
+                                deleteOneCell(precRange, depRange, edgeMeta, delDep);
+                        deleteMemEntry(precRange, depRange, edgeMeta);
+                        precList.remove(precRangeWithMeta);
+                        for (Pair<Ref, RefWithMeta> pair: newEdges) {
+                            Ref newPrec = pair.first;
+                            Ref newDep = pair.second.getRef();
+                            EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
+                            if (newDep.getType() == Ref.RefType.CELL) {
+                                add(newPrec, newDep);
+                            } else {
+                                insertMemEntry(newPrec, newDep, newEdgeMeta);
+                            }
+                            precList.add(new RefWithMeta(newPrec, newEdgeMeta));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void addBatch(List<Pair<Ref, Ref>> edgeBatch) {
@@ -490,7 +515,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                 ret.add(new Pair<>(splitPrec, new RefWithMeta(splitDep, edgeMeta)));
             }
         });
-        if (ret.isEmpty()) ret.add(new Pair<>(prec, new RefWithMeta(dep, edgeMeta)));
+        // if (ret.isEmpty()) ret.add(new Pair<>(prec, new RefWithMeta(dep, edgeMeta)));
         return ret;
     }
 
