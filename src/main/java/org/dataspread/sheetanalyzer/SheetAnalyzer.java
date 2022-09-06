@@ -60,6 +60,7 @@ public class SheetAnalyzer {
         }
         long end = System.currentTimeMillis();
         graphBuildTimeCost = end - start;
+        System.out.println("Graph bulding time: " + graphBuildTimeCost + "\n");
     }
 
     public long getGraphBuildTimeCost() { return graphBuildTimeCost; }
@@ -77,9 +78,13 @@ public class SheetAnalyzer {
             sheetData.getDepPairs().forEach(depPair -> {
                 Ref dep = depPair.first;
                 List<Ref> precList = depPair.second;
+                Set<Ref> visited = new HashSet<>();
                 precList.forEach(prec -> {
-                    depGraph.add(prec, dep);
-                    numEdges += 1;
+                    if (!visited.contains(prec)) {
+                        depGraph.add(prec, dep);
+                        numEdges += 1;
+                        visited.add(prec);
+                    }
                 });
                 refSet.add(dep);
                 refSet.addAll(precList);
@@ -100,15 +105,21 @@ public class SheetAnalyzer {
 
             HashSet<Ref> refSet = new HashSet<>();
             sheetData.getDepPairs().forEach(depPair -> {
+
+
                 if (inRowCompression) {
                     boolean inRowOnly = isInRowOnly(depPair);
                     depGraph.setDoCompression(inRowOnly);
                 }
                 Ref dep = depPair.first;
                 List<Ref> precList = depPair.second;
+                Set<Ref> visited = new HashSet<>();
                 precList.forEach(prec -> {
-                    depGraph.add(prec, dep);
-                    numEdges += 1;
+                    if (!visited.contains(prec)) {
+                        depGraph.add(prec, dep);
+                        numEdges += 1;
+                        visited.add(prec);
+                    }
                 });
                 refSet.add(dep);
                 refSet.addAll(precList);

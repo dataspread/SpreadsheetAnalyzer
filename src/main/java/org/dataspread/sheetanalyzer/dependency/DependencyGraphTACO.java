@@ -843,15 +843,18 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private Iterable<Ref> findOverlapAndAdjacency(Ref ref, int gapSize) {
-        LinkedList<Ref> res = new LinkedList<>();
+        // LinkedList<Ref> res = new LinkedList<>();
+        Set <Ref> res = new HashSet<>();
         int shift_step = gapSize + DEAULT_SHIFT_STEP;
 
-        findOverlappingRefs(ref).forEachRemaining(res::addLast);
+        // findOverlappingRefs(ref).forEachRemaining(res::addLast);
+        findOverlappingRefs(ref).forEachRemaining(res::add);
         Arrays.stream(Direction.values()).filter(direction -> direction != Direction.NODIRECTION)
                 .forEach(direction ->
                         findOverlappingRefs(shiftRef(ref, direction, shift_step))
                                 .forEachRemaining(adjRef -> {
-                                    if (isValidAdjacency(adjRef, ref, shift_step)) res.addLast(adjRef); // valid adjacency
+                                    // if (isValidAdjacency(adjRef, ref, shift_step)) res.addLast(adjRef); // valid adjacency
+                                    if (isValidAdjacency(adjRef, ref, shift_step)) res.add(adjRef); // valid adjacency
                                 })
                 );
 
