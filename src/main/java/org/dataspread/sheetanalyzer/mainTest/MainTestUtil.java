@@ -125,59 +125,18 @@ public class MainTestUtil {
             int origRow = targetRef.getRow();
             int origCol = targetRef.getColumn();
             DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(sheetName);
-            SheetData sheetData = sheetAnalyzer.getSheetDataMap().get(sheetName);
-            Set<Ref> depSet = sheetData.getDepSet();
-            int maxRow = sheetData.getMaxRows();
-            int maxCol = sheetData.getMaxCols();
+
+            // SheetData sheetData = sheetAnalyzer.getSheetDataMap().get(sheetName);
+            // Set<Ref> depSet = sheetData.getDepSet();
+            // int maxRow = sheetData.getMaxRows();
+            // int maxCol = sheetData.getMaxCols();
 
             ArrayList<Ref> candidateDeleteRefs = new ArrayList<>();
-
-            // Same column, rows below
-            for (int row = origRow; row < maxRow; row++) {
-                if (candidateDeleteRefs.size() >= modifySize) {
-                    break;
-                }
-                Ref candRef = new RefImpl(row, origCol);
-                if (depSet.contains(candRef)) {
-                    candidateDeleteRefs.add(candRef);
-                }
-            }
-
-            // Same row, columns right
-            for (int col = origCol; col < maxCol; col++) {
-                if (candidateDeleteRefs.size() >= modifySize) {
-                    break;
-                }
-                Ref candRef = new RefImpl(origRow, col);
-                if (depSet.contains(candRef)) {
-                    candidateDeleteRefs.add(candRef);
-                }
-            }
-
-            // Same column, rows above
-            for (int row = origRow; row > 0; row--) {
-                if (candidateDeleteRefs.size() >= modifySize) {
-                    break;
-                }
-                Ref candRef = new RefImpl(row, origCol);
-                if (depSet.contains(candRef)) {
-                    candidateDeleteRefs.add(candRef);
-                }
-            }
-
-            // Same row, columns left
-            for (int col = origCol; col > 0; col--) {
-                if (candidateDeleteRefs.size() >= modifySize) {
-                    break;
-                }
-                Ref candRef = new RefImpl(origRow, col);
-                if (depSet.contains(candRef)) {
-                    candidateDeleteRefs.add(candRef);
-                }
-            }
-
-            if (candidateDeleteRefs.size() < 100) {
-                return;
+            int count = 0;
+            while (count < modifySize) {
+                Ref candRef = new RefImpl(origRow + count, origCol);
+                candidateDeleteRefs.add(candRef);
+                count += 1;
             }
 
             long start = System.currentTimeMillis();
@@ -190,7 +149,6 @@ public class MainTestUtil {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append(fileName).append(",")
                     .append(refLoc).append(",")
-                    .append(candidateDeleteRefs.size()).append(",")
                     .append(graphModifyTimeCost).append("\n");
             statPW.write(stringBuilder.toString());
 

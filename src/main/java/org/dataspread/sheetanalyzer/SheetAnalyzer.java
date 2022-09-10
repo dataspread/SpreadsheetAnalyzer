@@ -60,7 +60,6 @@ public class SheetAnalyzer {
         }
         long end = System.currentTimeMillis();
         graphBuildTimeCost = end - start;
-        System.out.println("Graph bulding time: " + graphBuildTimeCost + "\n");
     }
 
     public long getGraphBuildTimeCost() { return graphBuildTimeCost; }

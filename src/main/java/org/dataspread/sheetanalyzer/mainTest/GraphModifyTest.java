@@ -42,7 +42,6 @@ public class GraphModifyTest {
             // Write header in output file
             String stringBuilder = "fileName" + "," +
                     targetColumn + "," +
-                    "GraphModifySize" + "," +
                     "GraphModifyTime" + "\n";
             statPW.write(stringBuilder);
 

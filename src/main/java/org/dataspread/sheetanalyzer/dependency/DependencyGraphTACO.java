@@ -376,7 +376,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                         List<Pair<Ref, RefWithMeta>> newEdges =
                                 deleteOneCell(precRange, depRange, edgeMeta, delDep);
                         deleteMemEntry(precRange, depRange, edgeMeta);
-                        precList.remove(precRangeWithMeta);
+                        // precList.remove(precRangeWithMeta);
                         for (Pair<Ref, RefWithMeta> pair: newEdges) {
                             Ref newPrec = pair.first;
                             Ref newDep = pair.second.getRef();
@@ -386,7 +386,7 @@ public class DependencyGraphTACO implements DependencyGraph {
                             } else {
                                 insertMemEntry(newPrec, newDep, newEdgeMeta);
                             }
-                            precList.add(new RefWithMeta(newPrec, newEdgeMeta));
+                            // precList.add(new RefWithMeta(newPrec, newEdgeMeta));
                         }
                     }
                 }
