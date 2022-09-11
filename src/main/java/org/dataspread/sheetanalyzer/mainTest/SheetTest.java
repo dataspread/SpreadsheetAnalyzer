@@ -19,13 +19,14 @@ public class SheetTest {
 
     public static void main(String[] args) throws IOException {
         if (!checkArgs(args)) {
-            String warning = "To run SheetTest, we need 6 arguments: \n" +
+            String warning = "To run SheetTest, we need 7 arguments: \n" +
                     "1) Path of a xls(x) file containing 'File name' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in list) \n" +
-                    "6) TACO or NoComp \n";
+                    "6) TACO or NoComp \n" +
+                    "7) IsGap True or False \n";
             System.out.println(warning);
             System.exit(-1);
         }
@@ -37,7 +38,7 @@ public class SheetTest {
         String targetFileName = args[4];
 
         boolean isCompression = args[5].equals("TACO");
-        String modelName = args[5];
+        boolean isGap = args[6].equals("True");
 
         List<String> fileNameList = parseInputFile(inputPath, sheetName, filelistColumnName);
 
@@ -55,7 +56,8 @@ public class SheetTest {
                     .append("numVertices").append(",")
                     .append("numEdges").append(",")
                     .append("numCompVertices").append(",")
-                    .append("numCompEdges").append(",");
+                    .append("numCompEdges").append(",")
+                    .append("graphBuildTime").append(",");
             if (!inRowCompression) {
                 if (isCompression) {
                     long numType = PatternType.values().length;
@@ -64,10 +66,8 @@ public class SheetTest {
                                 .append(PatternType.values()[pIdx].label + "_NoComp").append(",");
                     }
                 }
-                stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
-            } else {
-                stringBuilder.append("\n");
             }
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
             statPW.write(stringBuilder.toString());
 
             if (!targetFileName.equals("all")) {
@@ -76,7 +76,7 @@ public class SheetTest {
                     String filePath = fileDir + "/" + targetFileName;
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
-                                isCompression, isDollar);
+                                isCompression, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
                     } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());
@@ -92,7 +92,7 @@ public class SheetTest {
                     String filePath = fileDir + "/" + fileName;
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
-                                isCompression, isDollar);
+                                isCompression, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
                     } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());
@@ -157,7 +157,7 @@ public class SheetTest {
     }
 
     private static boolean checkArgs(String[] args) {
-        if (args.length != 6) {
+        if (args.length != 7) {
             System.out.println("Incorrect length!");
             return false;
         }

@@ -49,7 +49,8 @@ public class DependencyGraphTACO implements DependencyGraph {
 
     private boolean doCompression = true;
     private boolean inRowCompression = false;
-    public boolean dollar_signed = false;
+    private boolean dollar_signed = false;
+    private boolean isGap = true;
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
     private final DollarSignedCompressInfoComparator dollarSignedCompressInfoComparator =
@@ -179,13 +180,14 @@ public class DependencyGraphTACO implements DependencyGraph {
 
     public void add(Ref precedent, Ref dependent) {
         LinkedList<CompressInfo> compressInfoList = new LinkedList<>();
-        if (doCompression)
+        if (doCompression) {
             compressInfoList = findCompressInfo(precedent, dependent);
+        }
         if (compressInfoList.isEmpty()) {
             insertMemEntry(precedent, dependent,
                     new EdgeMeta(PatternType.NOTYPE, Offset.noOffset, Offset.noOffset));
         } else {
-            if (this.dollar_signed) {
+            if (dollar_signed) {
                 CompressInfo selectedInfo =
                         Collections.min(compressInfoList, dollarSignedCompressInfoComparator);
                 updateOneCompressEntry(selectedInfo);
@@ -408,6 +410,14 @@ public class DependencyGraphTACO implements DependencyGraph {
 
     public void setDoCompression(boolean doCompression) {
         this.doCompression = doCompression;
+    }
+
+    public void setIsDollar(boolean isDollar) {
+        this.dollar_signed = isDollar;
+    }
+
+    public void setIsGap(boolean isGap) {
+        this.isGap = isGap;
     }
 
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
@@ -654,7 +664,7 @@ public class DependencyGraphTACO implements DependencyGraph {
             });
         });
 
-        if (!inRowCompression) {
+        if (!inRowCompression && isGap) {
             for (int i = 0; i < PatternType.NOTYPE.ordinal()
                     - PatternType.TYPEFIVE.ordinal(); i++) {
                 int gapSize = i + 1;
@@ -752,7 +762,37 @@ public class DependencyGraphTACO implements DependencyGraph {
                                               Ref lastCandPrec) {
         PatternType compressType = PatternType.NOTYPE;
 
-        if (!this.dollar_signed) {
+        if (dollar_signed) {
+            if (checkLeftUpRelative(prec, direction)) {
+                if (checkRightDownRelative(prec, direction)) {
+                    // RR
+                    if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
+                        compressType = PatternType.TYPEONE;
+                        if (isCompressibleTypeZero(prec, dep, lastCandPrec))
+                            compressType = PatternType.TYPEZERO;
+                    }
+                } else {
+                    // RF
+                    if (isCompressibleTypeTwo(lastCandPrec, prec, direction)) {
+                        compressType = PatternType.TYPETWO;
+                    }
+                }
+            } else {
+                if (checkRightDownRelative(prec, direction)) {
+                    // FR
+                    if (isCompressibleTypeThree(lastCandPrec, prec, direction)) {
+                        compressType = PatternType.TYPETHREE;
+                    }
+                } else {
+                    // FF
+                    if (isCompressibleTypeFour(lastCandPrec, prec)) {
+                        compressType = PatternType.TYPEFOUR;
+                    }
+                }
+            }
+        }
+
+        if (compressType == PatternType.NOTYPE) {
             if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
                 compressType = PatternType.TYPEONE;
                 if (isCompressibleTypeZero(prec, dep, lastCandPrec))
@@ -763,64 +803,8 @@ public class DependencyGraphTACO implements DependencyGraph {
                 compressType = PatternType.TYPETHREE;
             else if (isCompressibleTypeFour(lastCandPrec, prec))
                 compressType = PatternType.TYPEFOUR;
-        } else {
-            if (checkLeftUpRelative(prec, direction)) {
-                if (checkRightDownRelative(prec, direction)) {
-                    // RR
-                    if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPEONE;
-                        if (isCompressibleTypeZero(prec, dep, lastCandPrec))
-                            compressType = PatternType.TYPEZERO;
-                    } else if (isCompressibleTypeTwo(lastCandPrec, prec, direction))
-                        compressType = PatternType.TYPETWO;
-                    else if (isCompressibleTypeThree(lastCandPrec, prec, direction))
-                        compressType = PatternType.TYPETHREE;
-                    else if (isCompressibleTypeFour(lastCandPrec, prec))
-                        compressType = PatternType.TYPEFOUR;
-                } else {
-                    // RF
-                    if (isCompressibleTypeTwo(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETWO;
-                    } else if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPEONE;
-                        if (isCompressibleTypeZero(prec, dep, lastCandPrec))
-                            compressType = PatternType.TYPEZERO;
-                    } else if (isCompressibleTypeThree(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETHREE;
-                    } else if (isCompressibleTypeFour(lastCandPrec, prec)) {
-                        compressType = PatternType.TYPEFOUR;
-                    }
-                }
-            } else {
-                if (checkRightDownRelative(prec, direction)) {
-                    // FR
-                    if (isCompressibleTypeThree(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETHREE;
-                    } else if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPEONE;
-                        if (isCompressibleTypeZero(prec, dep, lastCandPrec))
-                            compressType = PatternType.TYPEZERO;
-                    } else if (isCompressibleTypeTwo(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETWO;
-                    } else if (isCompressibleTypeFour(lastCandPrec, prec)) {
-                        compressType = PatternType.TYPEFOUR;
-                    }
-                } else {
-                    // FF
-                    if (isCompressibleTypeFour(lastCandPrec, prec)) {
-                        compressType = PatternType.TYPEFOUR;
-                    } else if (isCompressibleTypeThree(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETHREE;
-                    } else if (isCompressibleTypeTwo(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPETWO;
-                    } else if (isCompressibleTypeOne(lastCandPrec, prec, direction)) {
-                        compressType = PatternType.TYPEONE;
-                        if (isCompressibleTypeZero(prec, dep, lastCandPrec))
-                            compressType = PatternType.TYPEZERO;
-                    }
-                }
-            }
         }
+
         return compressType;
     }
 

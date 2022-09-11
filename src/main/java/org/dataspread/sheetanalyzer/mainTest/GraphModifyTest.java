@@ -10,13 +10,14 @@ public class GraphModifyTest {
 
     public static void main(String[] args) throws IOException {
         if(!checkArgs(args)) {
-            String warnings = "To run GraphModifyTest, we need 6 arguments: \n" +
+            String warnings = "To run GraphModifyTest, we need 7 arguments: \n" +
                     "1) Path of a xls(x) file containing 'File name' and 'Def Ref' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in dir) \n" +
-                    "6) TACO or NoComp \n";
+                    "6) TACO or NoComp \n" +
+                    "7) IsGap True or False \n";
             System.out.println(warnings);
             System.exit(-1);
         }
@@ -27,6 +28,7 @@ public class GraphModifyTest {
         String fileDir = args[3];
         String targetFileName = args[4];
         boolean isCompression = args[5].equals("TACO");
+        boolean isGap = args[6].equals("True");
         String targetColumn = "Max Dep Ref";
 
         HashMap<String, String> fileNameDepRefMap
@@ -49,7 +51,7 @@ public class GraphModifyTest {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
                     String depLoc = fileNameDepRefMap.get(targetFileName);
                     System.out.println("[1/1]: processing " + targetFileName);
-                    MainTestUtil.TestGraphModify(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar, isGap);
                 } else {
                     System.out.println("Cannot find target filename in DepRefMap");
                     System.exit(-1);
@@ -59,7 +61,7 @@ public class GraphModifyTest {
                     String depLoc = fileNameDepRefMap.get(fileName);
                     counter += 1;
                     System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                    MainTestUtil.TestGraphModify(statPW, fileDir, fileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, fileName, depLoc, isCompression, isDollar, isGap);
                 }
             }
         } catch (IOException e) {
@@ -131,7 +133,7 @@ public class GraphModifyTest {
 
 
     private static boolean checkArgs(String[] args) {
-        if (args.length != 6) {
+        if (args.length != 7) {
             System.out.println("Incorrect length!");
             return false;
         }

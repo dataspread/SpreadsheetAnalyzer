@@ -35,12 +35,17 @@ public class SheetAnalyzer {
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException{
-        this(filePath, inRowCompression, isCompression, false);
+                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException {
+        this(filePath, inRowCompression, isCompression, false, true);
     }
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression, boolean isCompression, boolean isDollar) throws SheetNotSupportedException {
+        this(filePath, inRowCompression, isCompression, isDollar, true);
+    }
+
+    public SheetAnalyzer(String filePath,
+                         boolean inRowCompression, boolean isCompression, boolean isDollar, boolean isGap) throws SheetNotSupportedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
 
@@ -54,7 +59,7 @@ public class SheetAnalyzer {
 
         long start = System.currentTimeMillis();
         if (this.isCompression) {
-            genDepGraphFromSheetData(depGraphMap, isDollar);
+            genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
         } else {
             genNoCompDepGraphFromSheetData(depGraphMap);
         }
@@ -93,19 +98,17 @@ public class SheetAnalyzer {
         });
     }
 
-    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap, boolean isDollar) {
+    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap, boolean isDollar, boolean isGap) {
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphTACO depGraph = new DependencyGraphTACO();
 
-            depGraph.dollar_signed = isDollar;
-
+            depGraph.setIsDollar(isDollar);
+            depGraph.setIsGap(isGap);
             depGraph.setInRowCompression(inRowCompression);
             depGraph.setDoCompression(true);
 
             HashSet<Ref> refSet = new HashSet<>();
             sheetData.getDepPairs().forEach(depPair -> {
-
-
                 if (inRowCompression) {
                     boolean inRowOnly = isInRowOnly(depPair);
                     depGraph.setDoCompression(inRowOnly);

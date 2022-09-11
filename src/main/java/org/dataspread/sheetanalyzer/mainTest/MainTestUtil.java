@@ -22,39 +22,12 @@ public class MainTestUtil {
         long numVertices = sheetAnalyzer.getNumVertices();
         long numCompEdges = sheetAnalyzer.getNumCompEdges();
         long numCompVertices = sheetAnalyzer.getNumCompVertices();
-
-        //Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
-        //Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
+        long graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
 
         long[] numCompEdgesPerPattern = new long[PatternType.values().length];
         long[] numEdgesPerPattern = new long[PatternType.values().length];
 
-        /*
-        long mostDepLookupTime = 0;
-        long longestDepLookupTime = 0;
-        long mostDepLookupSize = 0;
-        long longestDepLookupSize = 0;
-        */
-
         if (!inRowCompression) {
-            /*
-            mostDeps = sheetAnalyzer.getRefWithMostDeps();
-            longestDeps = sheetAnalyzer.getRefWithLongestDepChain();
-
-            // MostDeps
-            long start = System.currentTimeMillis();
-            String depSheetName = mostDeps.first.getSheetName();
-            DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(depSheetName);
-            mostDepLookupSize = depGraph.getDependents(mostDeps.first).size();
-            mostDepLookupTime = System.currentTimeMillis() - start;
-            // LongestDeps
-            start = System.currentTimeMillis();
-            depSheetName = longestDeps.first.getSheetName();
-            depGraph = sheetAnalyzer.getDependencyGraphs().get(depSheetName);
-            longestDepLookupSize = depGraph.getDependents(longestDeps.first).size();
-            longestDepLookupTime = System.currentTimeMillis() - start;
-            */
-
             if (sheetAnalyzer.getIsCompression()) {
                 sheetAnalyzer.getTACODepGraphs().forEach((sheetName, tacoGraph) -> {
                     tacoGraph.forEach((prec, depWithMetaList) -> {
@@ -85,21 +58,9 @@ public class MainTestUtil {
                     .append(numVertices).append(",")
                     .append(numEdges).append(",")
                     .append(numCompVertices).append(",")
-                    .append(numCompEdges).append(",");
+                    .append(numCompEdges).append(",")
+                    .append(graphBuildTime).append(",");
             if (!inRowCompression) {
-                /*
-                stringBuilder.append(",")
-                        .append(mostDeps.first.getSheetName()).append(",")
-                        .append(mostDeps.first).append(",")
-                        .append(mostDeps.second).append(",")
-                        .append(mostDepLookupTime).append(",")
-                        .append(mostDepLookupSize).append(",")
-                        .append(longestDeps.first.getSheetName()).append(",")
-                        .append(longestDeps.first).append(",")
-                        .append(longestDeps.second).append(",")
-                        .append(longestDepLookupTime).append(",")
-                        .append(longestDepLookupSize).append(",");
-                 */
                 if (sheetAnalyzer.getIsCompression()) {
                     for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
                         stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
@@ -113,23 +74,18 @@ public class MainTestUtil {
     }
 
     public static void TestGraphModify(PrintWriter statPW, String fileDir, String fileName,
-                                       String refLoc, boolean isCompression, boolean isDollar) {
+                                       String refLoc, boolean isCompression, boolean isDollar, boolean isGap) {
         boolean inRowCompression = false;
         String filePath = fileDir + "/" + fileName;
         int modifySize = 1000;
 
         try {
-            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar);
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar, isGap);
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
             int origRow = targetRef.getRow();
             int origCol = targetRef.getColumn();
             DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(sheetName);
-
-            // SheetData sheetData = sheetAnalyzer.getSheetDataMap().get(sheetName);
-            // Set<Ref> depSet = sheetData.getDepSet();
-            // int maxRow = sheetData.getMaxRows();
-            // int maxCol = sheetData.getMaxCols();
 
             ArrayList<Ref> candidateDeleteRefs = new ArrayList<>();
             int count = 0;
@@ -152,21 +108,18 @@ public class MainTestUtil {
                     .append(graphModifyTimeCost).append("\n");
             statPW.write(stringBuilder.toString());
 
-        } catch (SheetNotSupportedException e) {
-            e.printStackTrace();
-        } catch (OutOfMemoryError | NullPointerException e) {
+        } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
             System.out.println(e.getMessage());
         }
-
     }
 
     public static void TestRefDependent(PrintWriter statPW, String fileDir, String fileName,
-                                        String refLoc, boolean isCompression, boolean isDollar) {
+                                        String refLoc, boolean isCompression, boolean isDollar, boolean isGap) {
         boolean inRowCompression = false;
         String filePath = fileDir + "/" + fileName;
 
         try {
-            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar);
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar, isGap);
             long graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
@@ -193,10 +146,7 @@ public class MainTestUtil {
                     .append(lookupPostSize).append(",")
                     .append(lookupPostTime).append("\n");
             statPW.write(stringBuilder.toString());
-
-        } catch (SheetNotSupportedException e) {
-            e.printStackTrace();
-        } catch (OutOfMemoryError | NullPointerException e) {
+        } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
             System.out.println(e.getMessage());
         }
     }

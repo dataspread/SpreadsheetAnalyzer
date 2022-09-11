@@ -5,7 +5,6 @@ import org.apache.poi.ss.usermodel.*;
 import java.io.*;
 import java.util.HashMap;
 
-
 public class DepRefTest {
     static String filelistColumnName = "File name";
     static boolean isDollar = true;
@@ -13,14 +12,15 @@ public class DepRefTest {
     public static void main(String[] args) throws IOException {
 
         if (!checkArgs(args)) {
-            String warnings = "To run DepRefTest, we need 7 arguments: \n" +
+            String warnings = "To run DepRefTest, we need 8 arguments: \n" +
                     "1) Path of a xls(x) file containing 'File name' and 'Def Ref' \n" +
                     "2) SheetName \n" +
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in dir) \n" +
                     "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
-                    "7) TACO or NoComp \n";
+                    "7) TACO or NoComp \n" +
+                    "8) isGap True or False \n";
             System.out.println(warnings);
             System.exit(-1);
         }
@@ -33,6 +33,7 @@ public class DepRefTest {
 
         boolean isMostDep = args[5].equals("M") || args[5].equals("m");
         boolean isCompression = args[6].equals("TACO");
+        boolean isGap = args[7].equals("True");
         String modelName = args[6];
         String targetColumn = "Dep Ref";
         if (isMostDep) {
@@ -65,7 +66,7 @@ public class DepRefTest {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
                     String depLoc = fileNameDepRefMap.get(targetFileName);
                     System.out.println("[1/1]: processing " + targetFileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar, isGap);
                 } else {
                     System.out.println("Cannot find target filename in DepRefMap");
                     System.exit(-1);
@@ -75,7 +76,7 @@ public class DepRefTest {
                     String depLoc = fileNameDepRefMap.get(fileName);
                     counter += 1;
                     System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression, isDollar);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression, isDollar, isGap);
                 }
             }
         } catch (IOException e) {
@@ -146,7 +147,7 @@ public class DepRefTest {
     }
 
     private static boolean checkArgs(String[] args) {
-        if (args.length != 7) {
+        if (args.length != 8) {
             System.out.println("Incorrect length!");
             return false;
         }
