@@ -180,7 +180,6 @@ public class DependencyGraphNoComp implements DependencyGraph {
             for (int i = 0; i < precList.size(); i++) {
                 Ref precRef = precList.get(i);
                 deleteMemEntry(precRef, depRef);
-                // precList.remove(precRef);
             }
         }
     }
