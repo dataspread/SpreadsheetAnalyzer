@@ -3,6 +3,8 @@ package org.dataspread.sheetanalyzer.mainTest;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class DepRefTest {
@@ -13,11 +15,11 @@ public class DepRefTest {
 
         if (!checkArgs(args)) {
             String warnings = "To run DepRefTest, we need 8 arguments: \n" +
-                    "1) Path of a xls(x) file containing 'File name' and 'Def Ref' \n" +
-                    "2) SheetName \n" +
+                    "1) Metadata file that contains 'Spreadsheet name' and 'Dep Ref' \n" +
+                    "2) The sheet to read for the metadata file \n" +
                     "3) Path of output result \n" +
-                    "4) File directory \n" +
-                    "5) File name ('all' for all files in dir) \n" +
+                    "4) Spreadsheets directory \n" +
+                    "5) Spreadsheet file to test ('all' for all files in dir) \n" +
                     "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
                     "7) TACO or NoComp \n" +
                     "8) isGap True or False \n";
@@ -60,7 +62,8 @@ public class DepRefTest {
                     modelName + "LookupTime" + "," +
                     modelName + "PostProcessedLookupSize" + "," +
                     modelName + "PostProcessedLookupTime" + "\n";
-            statPW.write(stringBuilder);
+            if (Files.notExists(Paths.get(outputPath)))
+                statPW.write(stringBuilder);
 
             if (!targetFileName.equals("all")) {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
@@ -107,10 +110,11 @@ public class DepRefTest {
             if (row != null) {
                 Cell cell = row.getCell(j);
                 if (cell.getCellType() == CellType.STRING) {
-                    if (cell.getStringCellValue().equals(filelistColumnName)) {
+                    String header = cell.getStringCellValue().trim();
+                    if (header.compareToIgnoreCase(filelistColumnName) == 0) {
                         fileColumnIndex = j;
                     }
-                    if (cell.getStringCellValue().equals(depRefListColumnName)) {
+                    if (header.compareToIgnoreCase(depRefListColumnName) == 0) {
                         depColumnIndex = j;
                     }
                 }

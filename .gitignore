@@ -4,8 +4,10 @@
 .ipynb_checkpoints/
 
 # xls/xlsx files
-.xls
-.xlsx
+enron_xls
+github_xlsx
+*.xls
+*.xlsx
 
 # User-specific stuff
 .idea/**/workspace.xml

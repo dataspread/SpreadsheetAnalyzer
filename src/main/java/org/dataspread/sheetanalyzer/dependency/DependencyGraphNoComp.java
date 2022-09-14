@@ -32,18 +32,22 @@ public class DependencyGraphNoComp implements DependencyGraph {
     }
 
     private void getDependentsInternal(Ref prec, LinkedHashSet<Ref> result) {
-        RTree<Ref, Rectangle> resultSet = RTree.create();
+        // RTree<Ref, Rectangle> resultSet = RTree.create();
         Queue<Ref> updateQueue = new LinkedList<>();
         updateQueue.add(prec);
         while (!updateQueue.isEmpty()) {
             Ref updateRef = updateQueue.remove();
             for (Ref precRef: getNeighbors(updateRef)) {
                 for (Ref depRef: getDirectDependents(precRef)) {
-                    if (!isContained(resultSet, depRef)) {
-                        resultSet = resultSet.add(depRef, getRectangleFromRef(depRef));
+                    if (!result.contains(depRef)) {
                         result.add(depRef);
                         updateQueue.add(depRef);
                     }
+                    // if (!isContained(resultSet, depRef)) {
+                    //     resultSet = resultSet.add(depRef, getRectangleFromRef(depRef));
+                    //     result.add(depRef);
+                    //     updateQueue.add(depRef);
+                    // }
                 }
             }
         }
