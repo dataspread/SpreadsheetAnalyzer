@@ -7,7 +7,6 @@ import com.github.davidmoten.rtree.geometry.Rectangle;
 import org.dataspread.sheetanalyzer.dependency.util.*;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -173,18 +172,14 @@ public class DependencyGraphNoComp implements DependencyGraph {
 
     public void clearDependents(Ref delDep) {
         assert (delDep.getRow() == delDep.getLastRow()) && (delDep.getColumn() == delDep.getLastColumn());
-        Iterator<Ref> neighborIter = getNeighbors(delDep).iterator();
-        while (neighborIter.hasNext()) {
-            Ref depRef = neighborIter.next();
-            Iterator<Ref> precIter = getDirectPrecedent(depRef).iterator();
-            List<Ref> precList = new ArrayList<>();
-            while (precIter.hasNext()) {
-                precList.add(precIter.next());
-            }
-            for (int i = 0; i < precList.size(); i++) {
-                Ref precRef = precList.get(i);
-                deleteMemEntry(precRef, depRef);
-            }
+        List<Ref> precList = new ArrayList<>();
+        Iterator<Ref> precIter = getDirectPrecedent(delDep).iterator();
+        while (precIter.hasNext()) {
+            precList.add(precIter.next());
+        }
+        for (int i = 0; i < precList.size(); i++) {
+            Ref precRef = precList.get(i);
+            deleteMemEntry(precRef, delDep);
         }
     }
 

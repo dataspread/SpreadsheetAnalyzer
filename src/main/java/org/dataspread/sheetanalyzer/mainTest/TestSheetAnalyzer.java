@@ -1,6 +1,7 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
@@ -25,7 +26,7 @@ public class TestSheetAnalyzer {
         }
 
         boolean inRowCompression = false;
-        boolean isCompression = args[2].equals("TACO");
+        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[5]);
         boolean isDollar = args[3].equals("True");
         boolean isGap = args[4].equals("True");
 
@@ -50,7 +51,7 @@ public class TestSheetAnalyzer {
                         .append("numCompVertices").append(",")
                         .append("numCompEdges").append(",")
                         .append("graphBuildTime").append(",");
-                if (!inRowCompression && isCompression) {
+                if (!inRowCompression && depGraphType == DepGraphType.TACO) {
                     long numType = PatternType.values().length;
                     for (int pIdx = 0; pIdx < numType; pIdx++) {
                         stringBuilder.append(PatternType.values()[pIdx].label + "_Comp").append(",")
@@ -67,7 +68,7 @@ public class TestSheetAnalyzer {
                     String filePath = file.getAbsolutePath();
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
-                                isCompression, isDollar, isGap);
+                                depGraphType, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
                     } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());

@@ -1,6 +1,7 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.apache.poi.ss.usermodel.*;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -21,7 +22,7 @@ public class DepRefTest {
                     "4) Spreadsheets directory \n" +
                     "5) Spreadsheet file to test ('all' for all files in dir) \n" +
                     "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
-                    "7) TACO or NoComp \n" +
+                    "7) TACO or NoComp or Antifreeze \n" +
                     "8) isGap True or False \n";
             System.out.println(warnings);
             System.exit(-1);
@@ -33,9 +34,9 @@ public class DepRefTest {
         String fileDir = args[3];
         String targetFileName = args[4];
 
-        boolean isMostDep = args[5].equals("M") || args[5].equals("m");
-        boolean isCompression = args[6].equals("TACO");
-        boolean isGap = args[7].equals("True");
+        boolean isMostDep = args[5].compareToIgnoreCase("m") == 0;
+        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[6]);
+        boolean isGap = args[7].compareToIgnoreCase("True") == 0;
         String modelName = args[6];
         String targetColumn = "Dep Ref";
         if (isMostDep) {
@@ -69,7 +70,7 @@ public class DepRefTest {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
                     String depLoc = fileNameDepRefMap.get(targetFileName);
                     System.out.println("[1/1]: processing " + targetFileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar, isGap);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, targetFileName, depLoc, depGraphType, isDollar, isGap);
                 } else {
                     System.out.println("Cannot find target filename in DepRefMap");
                     System.exit(-1);
@@ -79,7 +80,7 @@ public class DepRefTest {
                     String depLoc = fileNameDepRefMap.get(fileName);
                     counter += 1;
                     System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, isCompression, isDollar, isGap);
+                    MainTestUtil.TestRefDependent(statPW, fileDir, fileName, depLoc, depGraphType, isDollar, isGap);
                 }
             }
         } catch (IOException e) {

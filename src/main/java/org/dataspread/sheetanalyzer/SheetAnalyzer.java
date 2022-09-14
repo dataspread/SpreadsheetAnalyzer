@@ -1,12 +1,13 @@
 package org.dataspread.sheetanalyzer;
 
-import org.apache.poi.ss.usermodel.Sheet;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphAntifreeze;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
 import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.util.*;
 
 import java.util.*;
@@ -22,7 +23,7 @@ public class SheetAnalyzer {
     private final boolean inRowCompression;
 
     // ADD
-    private final boolean isCompression;
+    private final DepGraphType depGraphType;
 
     private long numEdges = 0;
     private long numVertices = 0;
@@ -31,21 +32,21 @@ public class SheetAnalyzer {
     private long graphBuildTimeCost = 0;
 
     public SheetAnalyzer(String filePath) throws SheetNotSupportedException {
-        this(filePath, false, true);
+        this(filePath, false, DepGraphType.TACO);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, boolean isCompression) throws SheetNotSupportedException {
-        this(filePath, inRowCompression, isCompression, false, true);
+                         boolean inRowCompression, DepGraphType depGraphType) throws SheetNotSupportedException {
+        this(filePath, inRowCompression, depGraphType, false, true);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, boolean isCompression, boolean isDollar) throws SheetNotSupportedException {
-        this(filePath, inRowCompression, isCompression, isDollar, true);
+                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar) throws SheetNotSupportedException {
+        this(filePath, inRowCompression, depGraphType, isDollar, true);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, boolean isCompression, boolean isDollar, boolean isGap) throws SheetNotSupportedException {
+                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar, boolean isGap) throws SheetNotSupportedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
 
@@ -53,16 +54,17 @@ public class SheetAnalyzer {
         sheetDataMap = parser.getSheetData();
 
         this.inRowCompression = inRowCompression;
-        this.isCompression = isCompression;
+        this.depGraphType = depGraphType;
 
         depGraphMap = new HashMap<>();
 
         long start = System.currentTimeMillis();
-        if (this.isCompression) {
-            genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
-        } else {
-            genNoCompDepGraphFromSheetData(depGraphMap);
-        }
+        genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
+        // if (this.depGraph == DepGraph.TACO) {
+        //     genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
+        // } else {
+        //     genNoCompDepGraphFromSheetData(depGraphMap);
+        // }
         long end = System.currentTimeMillis();
         graphBuildTimeCost = end - start;
     }
@@ -71,8 +73,8 @@ public class SheetAnalyzer {
 
     public HashMap<String, SheetData> getSheetDataMap() { return sheetDataMap; }
 
-    public boolean getIsCompression() {
-        return isCompression;
+    public boolean isTACO() {
+       return this.depGraphType == DepGraphType.TACO;
     }
 
     private void genNoCompDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
@@ -98,27 +100,39 @@ public class SheetAnalyzer {
         });
     }
 
-    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap, boolean isDollar, boolean isGap) {
+    private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap,
+                                          boolean isDollar,
+                                          boolean isGap) {
         sheetDataMap.forEach((sheetName, sheetData) -> {
-            DependencyGraphTACO depGraph = new DependencyGraphTACO();
+            DependencyGraph depGraph = null;
+            if (depGraphType == DepGraphType.TACO) {
+                depGraph = new DependencyGraphTACO();
+                DependencyGraphTACO tacoGraph = (DependencyGraphTACO)depGraph;
 
-            depGraph.setIsDollar(isDollar);
-            depGraph.setIsGap(isGap);
-            depGraph.setInRowCompression(inRowCompression);
-            depGraph.setDoCompression(true);
+                tacoGraph.setIsDollar(isDollar);
+                tacoGraph.setIsGap(isGap);
+                tacoGraph.setInRowCompression(inRowCompression);
+                tacoGraph.setDoCompression(true);
+            } else if (depGraphType == DepGraphType.NOCOMP) {
+                depGraph = new DependencyGraphNoComp();
+            } else {
+                depGraph = new DependencyGraphAntifreeze();
+            }
 
             HashSet<Ref> refSet = new HashSet<>();
+            DependencyGraph finalDepGraph = depGraph;
+
             sheetData.getDepPairs().forEach(depPair -> {
-                if (inRowCompression) {
+                if (inRowCompression && depGraphType == DepGraphType.TACO) {
                     boolean inRowOnly = isInRowOnly(depPair);
-                    depGraph.setDoCompression(inRowOnly);
+                    ((DependencyGraphTACO) finalDepGraph).setDoCompression(inRowOnly);
                 }
                 Ref dep = depPair.first;
                 List<Ref> precList = depPair.second;
                 Set<Ref> visited = new HashSet<>();
                 precList.forEach(prec -> {
                     if (!visited.contains(prec)) {
-                        depGraph.add(prec, dep);
+                        finalDepGraph.add(prec, dep);
                         numEdges += 1;
                         visited.add(prec);
                     }
@@ -126,6 +140,10 @@ public class SheetAnalyzer {
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
+
+            if (depGraphType == DepGraphType.ANTIFREEZE)
+                ((DependencyGraphAntifreeze) depGraph).rebuildCompGraph();
+
             // depGraph.postMerge();
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();

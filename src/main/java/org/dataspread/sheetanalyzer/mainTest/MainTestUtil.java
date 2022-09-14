@@ -2,8 +2,10 @@ package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
+import org.dataspread.sheetanalyzer.dependency.DependencyGraphAntifreeze;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
 import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.dependency.util.RefUtils;
 import org.dataspread.sheetanalyzer.util.*;
@@ -28,7 +30,7 @@ public class MainTestUtil {
         long[] numEdgesPerPattern = new long[PatternType.values().length];
 
         if (!inRowCompression) {
-            if (sheetAnalyzer.getIsCompression()) {
+            if (sheetAnalyzer.isTACO()) {
                 sheetAnalyzer.getTACODepGraphs().forEach((sheetName, tacoGraph) -> {
                     tacoGraph.forEach((prec, depWithMetaList) -> {
                         depWithMetaList.forEach(depWithMeta -> {
@@ -61,7 +63,7 @@ public class MainTestUtil {
                     .append(numCompEdges).append(",")
                     .append(graphBuildTime).append(",");
             if (!inRowCompression) {
-                if (sheetAnalyzer.getIsCompression()) {
+                if (sheetAnalyzer.isTACO()) {
                     for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
                         stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
                                 .append(numEdgesPerPattern[pIdx]).append(",");
@@ -74,13 +76,13 @@ public class MainTestUtil {
     }
 
     public static void TestGraphModify(PrintWriter statPW, String fileDir, String fileName,
-                                       String refLoc, boolean isCompression, boolean isDollar, boolean isGap) {
+                                       String refLoc, DepGraphType depGraphType, boolean isDollar, boolean isGap) {
         boolean inRowCompression = false;
         String filePath = fileDir + "/" + fileName;
         int modifySize = 1000;
 
         try {
-            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar, isGap);
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, depGraphType, isDollar, isGap);
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
             int origRow = targetRef.getRow();
@@ -99,6 +101,8 @@ public class MainTestUtil {
             for (Ref ref: candidateDeleteRefs) {
                 depGraph.clearDependents(ref);
             }
+            if (depGraphType == DepGraphType.ANTIFREEZE)
+                ((DependencyGraphAntifreeze) depGraph).rebuildCompGraph();
             long end = System.currentTimeMillis();
             long graphModifyTimeCost = end - start;
 
@@ -114,12 +118,12 @@ public class MainTestUtil {
     }
 
     public static void TestRefDependent(PrintWriter statPW, String fileDir, String fileName,
-                                        String refLoc, boolean isCompression, boolean isDollar, boolean isGap) {
+                                        String refLoc, DepGraphType depGraphType, boolean isDollar, boolean isGap) {
         boolean inRowCompression = false;
         String filePath = fileDir + "/" + fileName;
 
         try {
-            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, isCompression, isDollar, isGap);
+            SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, depGraphType, isDollar, isGap);
             long graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
@@ -154,8 +158,8 @@ public class MainTestUtil {
     public static void TestComparisonStat(PrintWriter statPW, String filePath) {
         boolean inRowCompression = false;
         try {
-            SheetAnalyzer sheetCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, true);
-            SheetAnalyzer sheetNoCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, false);
+            SheetAnalyzer sheetCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, DepGraphType.TACO);
+            SheetAnalyzer sheetNoCompAnalyzer = new SheetAnalyzer(filePath, inRowCompression, DepGraphType.NOCOMP);
 
             Pair<Ref, Long> mostDeps = new Pair(new RefImpl(-1, -1), 0);
             Pair<Ref, Long> longestDeps = new Pair(new RefImpl(-1, -1), 0);
@@ -254,5 +258,14 @@ public class MainTestUtil {
         int rowIndex = Integer.parseInt(cellString.substring(1)) - 1;
 
         return new RefImpl(rowIndex, colIndex);
+    }
+
+    public static DepGraphType fromStringToDepGraphType(String depGraphString) {
+        if (depGraphString.trim().compareToIgnoreCase("taco") == 0)
+            return DepGraphType.TACO;
+        else if (depGraphString.trim().compareToIgnoreCase("antifreeze") == 0)
+            return DepGraphType.ANTIFREEZE;
+        else
+            return DepGraphType.NOCOMP;
     }
 }

@@ -1,6 +1,8 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.apache.poi.ss.usermodel.*;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
+
 import java.io.*;
 import java.util.HashMap;
 
@@ -16,7 +18,7 @@ public class GraphModifyTest {
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in dir) \n" +
-                    "6) TACO or NoComp \n" +
+                    "6) TACO or NoComp or Antifreeze \n" +
                     "7) IsGap True or False \n";
             System.out.println(warnings);
             System.exit(-1);
@@ -27,8 +29,8 @@ public class GraphModifyTest {
         String outputPath = args[2];
         String fileDir = args[3];
         String targetFileName = args[4];
-        boolean isCompression = args[5].equals("TACO");
-        boolean isGap = args[6].equals("True");
+        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[5]);
+        boolean isGap = args[6].compareToIgnoreCase("True") == 0;
         String targetColumn = "Max Dep Ref";
 
         HashMap<String, String> fileNameDepRefMap
@@ -51,7 +53,7 @@ public class GraphModifyTest {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
                     String depLoc = fileNameDepRefMap.get(targetFileName);
                     System.out.println("[1/1]: processing " + targetFileName);
-                    MainTestUtil.TestGraphModify(statPW, fileDir, targetFileName, depLoc, isCompression, isDollar, isGap);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, targetFileName, depLoc, depGraphType, isDollar, isGap);
                 } else {
                     System.out.println("Cannot find target filename in DepRefMap");
                     System.exit(-1);
@@ -61,7 +63,7 @@ public class GraphModifyTest {
                     String depLoc = fileNameDepRefMap.get(fileName);
                     counter += 1;
                     System.out.println("[" + counter + "/" + fileNameDepRefMap.size() + "]: " + "processing " + fileName);
-                    MainTestUtil.TestGraphModify(statPW, fileDir, fileName, depLoc, isCompression, isDollar, isGap);
+                    MainTestUtil.TestGraphModify(statPW, fileDir, fileName, depLoc, depGraphType, isDollar, isGap);
                 }
             }
         } catch (IOException e) {

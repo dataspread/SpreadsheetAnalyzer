@@ -2,6 +2,7 @@ package org.dataspread.sheetanalyzer.mainTest;
 
 import org.apache.poi.ss.usermodel.*;
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
@@ -37,7 +38,7 @@ public class SheetTest {
         String fileDir = args[3];
         String targetFileName = args[4];
 
-        boolean isCompression = args[5].equals("TACO");
+        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[5]);
         boolean isGap = args[6].equals("True");
 
         List<String> fileNameList = parseInputFile(inputPath, sheetName, filelistColumnName);
@@ -59,7 +60,7 @@ public class SheetTest {
                     .append("numCompEdges").append(",")
                     .append("graphBuildTime").append(",");
             if (!inRowCompression) {
-                if (isCompression) {
+                if (depGraphType == DepGraphType.TACO) {
                     long numType = PatternType.values().length;
                     for (int pIdx = 0; pIdx < numType; pIdx++) {
                         stringBuilder.append(PatternType.values()[pIdx].label + "_Comp").append(",")
@@ -76,7 +77,7 @@ public class SheetTest {
                     String filePath = fileDir + "/" + targetFileName;
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
-                                isCompression, isDollar, isGap);
+                                depGraphType, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
                     } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());
@@ -92,7 +93,7 @@ public class SheetTest {
                     String filePath = fileDir + "/" + fileName;
                     try {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
-                                isCompression, isDollar, isGap);
+                                depGraphType, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
                     } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
                         System.out.println(e.getMessage());

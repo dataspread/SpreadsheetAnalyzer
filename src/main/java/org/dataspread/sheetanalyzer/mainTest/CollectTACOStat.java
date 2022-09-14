@@ -1,6 +1,7 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
+import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.util.Ref;
 import org.dataspread.sheetanalyzer.util.SheetNotSupportedException;
 
@@ -30,13 +31,13 @@ public class CollectTACOStat {
         String tacoStatPath = statFolder + "/" + tacoFile;
 
         boolean inRowCompression = false;
-        boolean isCompression = true;
+        DepGraphType depGraphType = DepGraphType.TACO;
         try (PrintWriter statPW = new PrintWriter(new FileWriter(tacoStatPath, true))) {
 
                 String filePath = inputFile.getAbsolutePath();
                 try {
                     SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath,
-                            inRowCompression, isCompression);
+                            inRowCompression, depGraphType);
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(sheetAnalyzer.getFileName()).append(",")
                             .append(sheetAnalyzer.getNumEdges()).append(",")
