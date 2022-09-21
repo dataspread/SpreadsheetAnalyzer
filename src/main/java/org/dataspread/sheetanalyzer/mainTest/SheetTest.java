@@ -16,7 +16,7 @@ import java.util.List;
 public class SheetTest {
     static String filelistColumnName = "File name";
     static boolean isDollar = true;
-    static boolean inRowCompression = true;
+    static boolean inRowCompression = false;
 
     public static void main(String[] args) throws IOException {
         if (!checkArgs(args)) {
@@ -26,7 +26,7 @@ public class SheetTest {
                     "3) Path of output result \n" +
                     "4) File directory \n" +
                     "5) File name ('all' for all files in list) \n" +
-                    "6) TACO or NoComp \n" +
+                    "6) TACO or NoComp or Antifreeze\n" +
                     "7) IsGap True or False \n";
             System.out.println(warning);
             System.exit(-1);

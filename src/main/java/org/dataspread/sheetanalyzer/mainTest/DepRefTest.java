@@ -54,6 +54,10 @@ public class DepRefTest {
         }
 
         int counter = 0;
+        boolean isHead = false;
+        if (Files.notExists(Paths.get(outputPath)))
+            isHead = true;
+
         try (PrintWriter statPW = new PrintWriter(new FileWriter(outputPath, true))) {
             // Write header in output file
             String stringBuilder = "fileName" + "," +
@@ -63,8 +67,11 @@ public class DepRefTest {
                     modelName + "LookupTime" + "," +
                     modelName + "PostProcessedLookupSize" + "," +
                     modelName + "PostProcessedLookupTime" + "\n";
-            if (Files.notExists(Paths.get(outputPath)))
+
+            File file = new File(outputPath);
+            if (isHead) {
                 statPW.write(stringBuilder);
+            }
 
             if (!targetFileName.equals("all")) {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {

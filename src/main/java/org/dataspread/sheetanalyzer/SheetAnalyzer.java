@@ -60,11 +60,6 @@ public class SheetAnalyzer {
 
         long start = System.currentTimeMillis();
         genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
-        // if (this.depGraph == DepGraph.TACO) {
-        //     genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
-        // } else {
-        //     genNoCompDepGraphFromSheetData(depGraphMap);
-        // }
         long end = System.currentTimeMillis();
         graphBuildTimeCost = end - start;
     }
