@@ -11,9 +11,7 @@ import java.util.HashMap;
 public class DepRefTest {
     static String filelistColumnName = "File name";
     static boolean isDollar = true;
-
     public static void main(String[] args) throws IOException {
-
         if (!checkArgs(args)) {
             String warnings = "To run DepRefTest, we need 8 arguments: \n" +
                     "1) Metadata file that contains 'Spreadsheet name' and 'Dep Ref' \n" +
@@ -54,9 +52,7 @@ public class DepRefTest {
         }
 
         int counter = 0;
-        boolean isHead = false;
-        if (Files.notExists(Paths.get(outputPath)))
-            isHead = true;
+        boolean isHead = Files.notExists(Paths.get(outputPath));
 
         try (PrintWriter statPW = new PrintWriter(new FileWriter(outputPath, true))) {
             // Write header in output file
@@ -68,7 +64,6 @@ public class DepRefTest {
                     modelName + "PostProcessedLookupSize" + "," +
                     modelName + "PostProcessedLookupTime" + "\n";
 
-            File file = new File(outputPath);
             if (isHead) {
                 statPW.write(stringBuilder);
             }
@@ -133,8 +128,8 @@ public class DepRefTest {
             System.out.println("Cannot find " + filelistColumnName + " and " + depRefListColumnName);
             return fileNameDepRefMap;
         }
-
-        for (int i = 1; i < maxRows; i++) {
+    
+        for (int i = 1; i <= maxRows; i++) {
             String fileName = null, depLoc = null;
             Row row = sheet.getRow(i);
             if (row != null) {
@@ -176,7 +171,7 @@ public class DepRefTest {
             return false;
         }
 
-        if (!(args[6].equals("TACO") || args[6].equals("NoComp"))) {
+        if (!(args[6].equals("TACO") || args[6].equals("NoComp") || args[6].equals("Antifreeze"))) {
             System.out.println("Wrong model type!");
             return false;
         }

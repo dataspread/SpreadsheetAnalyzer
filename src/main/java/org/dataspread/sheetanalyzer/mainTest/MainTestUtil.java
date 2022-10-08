@@ -53,26 +53,24 @@ public class MainTestUtil {
             }
         }
 
-        if (numEdges >= 10) {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(fileName).append(",")
-                    .append(numFormulae).append(",")
-                    .append(numVertices).append(",")
-                    .append(numEdges).append(",")
-                    .append(numCompVertices).append(",")
-                    .append(numCompEdges).append(",")
-                    .append(graphBuildTime).append(",");
-            if (!inRowCompression) {
-                if (sheetAnalyzer.isTACO()) {
-                    for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
-                        stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
-                                .append(numEdgesPerPattern[pIdx]).append(",");
-                    }
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(fileName).append(",")
+                .append(numFormulae).append(",")
+                .append(numVertices).append(",")
+                .append(numEdges).append(",")
+                .append(numCompVertices).append(",")
+                .append(numCompEdges).append(",")
+                .append(graphBuildTime).append(",");
+        if (!inRowCompression) {
+            if (sheetAnalyzer.isTACO()) {
+                for (int pIdx = 0; pIdx < numCompEdgesPerPattern.length; pIdx++) {
+                    stringBuilder.append(numCompEdgesPerPattern[pIdx]).append(",")
+                            .append(numEdgesPerPattern[pIdx]).append(",");
                 }
             }
-            stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
-            statPW.write(stringBuilder.toString());
         }
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1).append("\n");
+        statPW.write(stringBuilder.toString());
     }
 
     public static void TestGraphModify(PrintWriter statPW, String fileDir, String fileName,
@@ -125,6 +123,12 @@ public class MainTestUtil {
         try {
             SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, depGraphType, isDollar, isGap);
             long graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(fileName).append(",")
+                    .append(refLoc).append(",")
+                    .append(graphBuildTime).append(",");
+            statPW.write(stringBuilder.toString());
+
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc);
 
@@ -141,11 +145,8 @@ public class MainTestUtil {
             lookupPostSize = processedResult.size();
             lookupPostTime = System.currentTimeMillis() - start;
 
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(fileName).append(",")
-                    .append(refLoc).append(",")
-                    .append(graphBuildTime).append(",")
-                    .append(lookupSize).append(",")
+            stringBuilder = new StringBuilder();
+            stringBuilder.append(lookupSize).append(",")
                     .append(lookupTime).append(",")
                     .append(lookupPostSize).append(",")
                     .append(lookupPostTime).append("\n");

@@ -58,8 +58,9 @@ public class RefUtils {
         int colIdx = 0;
         char[] colChars = col.toLowerCase().toCharArray();
         for (int i = 0; i < colChars.length; i++) {
-            colIdx += (colChars[i] - 'a') * Math.pow(26, colChars.length - i - 1);
+            colIdx += (colChars[i] - 'a' + 1) * Math.pow(26, colChars.length - i - 1);
         }
+        colIdx -= 1;
         return new RefImpl(rowIdx, colIdx);
     }
 

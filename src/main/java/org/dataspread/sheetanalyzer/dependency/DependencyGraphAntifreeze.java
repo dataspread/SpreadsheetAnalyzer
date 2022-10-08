@@ -18,7 +18,12 @@ public class DependencyGraphAntifreeze implements DependencyGraph {
     public Set<Ref> getDependents(Ref precedent) {
         assert precedent.getRow() == precedent.getLastRow() &&
                 precedent.getColumn() == precedent.getLastColumn();
-        return compPrecToDepSet.get(precedent);
+        Set<Ref> result = compPrecToDepSet.get(precedent);
+        if (result == null) {
+            return new LinkedHashSet<>();
+        } else {
+            return result;
+        }
     }
 
     @Override

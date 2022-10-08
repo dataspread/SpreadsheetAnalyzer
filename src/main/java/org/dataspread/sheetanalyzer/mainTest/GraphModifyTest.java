@@ -109,7 +109,7 @@ public class GraphModifyTest {
             return fileNameDepRefMap;
         }
 
-        for (int i = 1; i < maxRows; i++) {
+        for (int i = 1; i <= maxRows; i++) {
             String fileName = null, depLoc = null;
             Row row = sheet.getRow(i);
             if (row != null) {
