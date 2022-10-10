@@ -1,41 +1,8 @@
 # SheetAnalyzer
 
-SheetAnalyzer is a library for analyzing the depenency and formula structure of a spreadsheet
+SheetAnalyzer is a library for analyzing the depenency and formula structure of a spreadsheet. This branch is the code repository of our ICDE 2023 paper.
 
-## API
+The main code for formula dependency management is [here](https://github.com/dataspread/sheetanalyzer/tree/taco_icde/src/main/java/org/dataspread/sheetanalyzer/dependency)
 
-[SheetAnalyzer.java](https://github.com/dataspread/sheetanalyzer/blob/main/src/main/java/org/dataspread/sheetanalyzer/SheetAnalyzer.java) provides the API for use
+The full dataset we tested in the paper is [here](https://github.com/dataspread/dataset)
 
-## Installation
-
-1. Configure maven to retrieve from the Central Repository: (https://central.sonatype.org/consume/consume-apache-maven/)
-2. Add to your project's `pom.xml`:
-
-```xml
-<dependency>
-  <groupId>io.github.dataspread</groupId>
-  <artifactId>sheetanalyzer</artifactId>
-  <version>0.0.2</version>
-</dependency>
-```
-
-## Test
-
-```shell
-mvn test
-```
-
-## Deployment
-
-```shell
-mvn versions:set -DnewVersion=1.2.3
-```
-
-```shell
-mvn clean deploy -P release
-```
-
-More information for deploying:
-
-- https://central.sonatype.org/publish/release/
-- https://central.sonatype.org/publish/publish-maven/
