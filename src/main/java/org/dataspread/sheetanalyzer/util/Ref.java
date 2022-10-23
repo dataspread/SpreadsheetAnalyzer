@@ -1,5 +1,7 @@
 package org.dataspread.sheetanalyzer.util;
 
+import org.dataspread.sheetanalyzer.dependency.util.EdgeType;
+
 import java.util.Set;
 
 public interface Ref {
@@ -27,6 +29,10 @@ public interface Ref {
 	void setColumn(int column);
 	void setLastRow(int lastRow);
 	void setLastColumn(int lastColumn);
+
+	// ADD: set EdgeType
+	void setEdgeType(EdgeType type);
+	EdgeType getEdgeType();
 
 	// ADD: interface for dollar setting and checking
 	void setLeftUpColumnDollar();

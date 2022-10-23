@@ -1,5 +1,6 @@
 package org.dataspread.sheetanalyzer.mainTest;
 
+import org.apache.poi.openxml4j.exceptions.OpenXML4JRuntimeException;
 import org.dataspread.sheetanalyzer.SheetAnalyzer;
 import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.dependency.util.PatternType;
@@ -26,7 +27,7 @@ public class TestSheetAnalyzer {
         }
 
         boolean inRowCompression = false;
-        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[5]);
+        DepGraphType depGraphType = MainTestUtil.fromStringToDepGraphType(args[2]);
         boolean isDollar = args[3].equals("True");
         boolean isGap = args[4].equals("True");
 
@@ -41,7 +42,7 @@ public class TestSheetAnalyzer {
 
         if (fileArray != null) {
             int counter = 0;
-            try (PrintWriter statPW = new PrintWriter(new FileWriter(statPath, false))) {
+            try (PrintWriter statPW = new PrintWriter(new FileWriter(statPath, false));) {
                 // Write headers in stat
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append("fileName").append(",")
@@ -51,6 +52,7 @@ public class TestSheetAnalyzer {
                         .append("numCompVertices").append(",")
                         .append("numCompEdges").append(",")
                         .append("graphBuildTime").append(",");
+
                 if (!inRowCompression && depGraphType == DepGraphType.TACO) {
                     long numType = PatternType.values().length;
                     for (int pIdx = 0; pIdx < numType; pIdx++) {
@@ -70,10 +72,11 @@ public class TestSheetAnalyzer {
                         SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression,
                                 depGraphType, isDollar, isGap);
                         MainTestUtil.writePerSheetStat(sheetAnalyzer, statPW, inRowCompression);
-                    } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
-                        System.out.println(e.getMessage());
+                    } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException | OpenXML4JRuntimeException e) {
+                        System.out.println(e);
                     }
                 }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

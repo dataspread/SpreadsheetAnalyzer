@@ -18,9 +18,12 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SheetAnalyzer {
     private final SpreadsheetParser parser;
     private final String fileName;
-    private final HashMap<String, SheetData> sheetDataMap;
-    private final HashMap<String, DependencyGraph> depGraphMap;
-    private final boolean inRowCompression;
+    private HashMap<String, SheetData> sheetDataMap = new HashMap<>();
+    private HashMap<String, DependencyGraph> depGraphMap;
+    private boolean inRowCompression;
+
+    // public HashSet<String> operandTypeSet = new HashSet<>();
+    // public HashSet<String> operatorTypeSet = new HashSet<>();
 
     // ADD
     private final DepGraphType depGraphType;
@@ -52,12 +55,10 @@ public class SheetAnalyzer {
 
         // All sheet data stored <string, sheetdata>
         sheetDataMap = parser.getSheetData();
-
         this.inRowCompression = inRowCompression;
         this.depGraphType = depGraphType;
 
         depGraphMap = new HashMap<>();
-
         long start = System.currentTimeMillis();
         genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
         long end = System.currentTimeMillis();
@@ -72,29 +73,6 @@ public class SheetAnalyzer {
        return this.depGraphType == DepGraphType.TACO;
     }
 
-    private void genNoCompDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
-        sheetDataMap.forEach((sheetName, sheetData) -> {
-            DependencyGraphNoComp depGraph = new DependencyGraphNoComp();
-            HashSet<Ref> refSet = new HashSet<>();
-            sheetData.getDepPairs().forEach(depPair -> {
-                Ref dep = depPair.first;
-                List<Ref> precList = depPair.second;
-                Set<Ref> visited = new HashSet<>();
-                precList.forEach(prec -> {
-                    if (!visited.contains(prec)) {
-                        depGraph.add(prec, dep);
-                        numEdges += 1;
-                        visited.add(prec);
-                    }
-                });
-                refSet.add(dep);
-                refSet.addAll(precList);
-            });
-            inputDepGraphMap.put(sheetName, depGraph);
-            numVertices += refSet.size();
-        });
-    }
-
     private void genDepGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap,
                                           boolean isDollar,
                                           boolean isGap) {
@@ -103,11 +81,12 @@ public class SheetAnalyzer {
             if (depGraphType == DepGraphType.TACO) {
                 depGraph = new DependencyGraphTACO();
                 DependencyGraphTACO tacoGraph = (DependencyGraphTACO)depGraph;
-
                 tacoGraph.setIsDollar(isDollar);
                 tacoGraph.setIsGap(isGap);
                 tacoGraph.setInRowCompression(inRowCompression);
                 tacoGraph.setDoCompression(true);
+                // Add EdgeType check
+                tacoGraph.setIsTypeSensitive(true);
             } else if (depGraphType == DepGraphType.NOCOMP) {
                 depGraph = new DependencyGraphNoComp();
             } else {
@@ -135,6 +114,7 @@ public class SheetAnalyzer {
                 refSet.add(dep);
                 refSet.addAll(precList);
             });
+
 
             if (depGraphType == DepGraphType.ANTIFREEZE)
                 ((DependencyGraphAntifreeze) depGraph).rebuildCompGraph();

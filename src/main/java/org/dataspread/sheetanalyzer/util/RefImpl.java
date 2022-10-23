@@ -1,5 +1,7 @@
 package org.dataspread.sheetanalyzer.util;
 
+import org.dataspread.sheetanalyzer.dependency.util.EdgeType;
+
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -29,6 +31,9 @@ public class RefImpl implements Ref, Serializable {
 	private boolean left_up_row_dollar = false;
 	private boolean right_down_column_dollar = false;
 	private boolean right_down_row_dollar = false;
+
+	// ADD: Edgetype
+	private EdgeType edgeType = EdgeType.OTHER;
 
 	@SuppressWarnings("unused")
 	public RefImpl() {
@@ -157,6 +162,16 @@ public class RefImpl implements Ref, Serializable {
 	@Override
 	public void setLastColumn(int lastColumn) {
 		_lastColumn = lastColumn;
+	}
+
+	@Override
+	public void setEdgeType(EdgeType type) {
+		edgeType = type;
+	}
+
+	@Override
+	public EdgeType getEdgeType() {
+		return edgeType;
 	}
 
 	@Override

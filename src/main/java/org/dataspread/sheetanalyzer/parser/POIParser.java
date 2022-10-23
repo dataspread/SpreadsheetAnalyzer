@@ -10,14 +10,14 @@ import org.apache.poi.ss.formula.ptg.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFEvaluationWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.xmlgraphics.util.dijkstra.Edge;
 import org.dataspread.sheetanalyzer.util.*;
+import org.dataspread.sheetanalyzer.dependency.util.EdgeType;
+import org.w3c.dom.Attr;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class POIParser implements SpreadsheetParser {
 
@@ -25,6 +25,9 @@ public class POIParser implements SpreadsheetParser {
     private FormulaParsingWorkbook evalbook;
     private final HashMap<String, SheetData> sheetDataMap;
     private final String fileName;
+
+    public HashSet<String> operandTypeSet = new HashSet<>();
+    public HashSet<String> operatorTypeSet = new HashSet<>();
 
     public POIParser(String filePath) throws SheetNotSupportedException {
         File fileItem = new File(filePath);
@@ -52,7 +55,6 @@ public class POIParser implements SpreadsheetParser {
                 }
             }
         }
-
     }
 
     public String getFileName() {
@@ -131,20 +133,87 @@ public class POIParser implements SpreadsheetParser {
     private void parseOneFormulaCell(SheetData sheetData, Cell cell) {
         // Dependent Ref
         Ref dep = new RefImpl(cell.getRowIndex(), cell.getColumnIndex());
+
         try {
             Ptg[] tokens = this.getTokens(cell);
+            assert tokens != null;
+
+            /*
+            for (Ptg ptg: tokens) {
+                String type = ptg.getClass().toString();
+                if (ptg instanceof OperationPtg || ptg instanceof AttrPtg) {
+                    this.operatorTypeSet.add(type);
+                } else {
+                    this.operandTypeSet.add(type);
+                }
+            }
+            */
+
+            EdgeType edgeType = null;
+            int numberOfOperands = -1;
             List<Ref> precList = new LinkedList<>();
+            Deque<Ref> precDeque = new ArrayDeque<>();
             int numRefs = 0;
-            if (tokens != null) {
-                for (Ptg token : tokens) {
-                    if (token instanceof OperandPtg) {
-                        Ref prec = parseOneToken(cell, (OperandPtg) token, sheetData);
-                        if (prec != null) {
-                            numRefs += 1;
-                            precList.add(prec);
-                        }
+
+            for (Ptg ptg: tokens) {
+                if (ptg instanceof OperandPtg) {
+                    Ref prec = parseOneToken(cell, (OperandPtg) ptg, sheetData);
+                    if (prec != null) {
+                        numRefs += 1;
+                        precDeque.push(prec);
                     }
                 }
+
+                // String type = ptg.getClass().toString();
+                if (ptg instanceof OperationPtg || ptg instanceof AttrPtg) {
+                    if (ptg instanceof AttrPtg) {
+                        numberOfOperands = ((AttrPtg) ptg).getNumberOfOperands();
+                    } else {
+                        numberOfOperands = ((OperationPtg) ptg).getNumberOfOperands();
+                    }
+
+                    if (ptg instanceof AddPtg) {
+                        edgeType = EdgeType.ADD;
+                    } else if (ptg instanceof SubtractPtg) {
+                        edgeType = EdgeType.SUBTRACT;
+                    } else if (ptg instanceof MultiplyPtg) {
+                        edgeType = EdgeType.MULTIPLY;
+                    } else if (ptg instanceof DividePtg) {
+                        edgeType = EdgeType.DIVIDE;
+                    } else if (ptg instanceof PowerPtg) {
+                        edgeType = EdgeType.POWER;
+                    } else if (ptg instanceof GreaterEqualPtg ||
+                            ptg instanceof GreaterThanPtg ||
+                            ptg instanceof LessThanPtg ||
+                            ptg instanceof LessEqualPtg ||
+                            ptg instanceof NotEqualPtg ||
+                            ptg instanceof EqualPtg) {
+                        edgeType = EdgeType.COMPARE;
+                    } else if (ptg instanceof FuncVarPtg) {
+                        edgeType = EdgeType.FUNCTION;
+                    } else if (ptg instanceof IntersectionPtg || ptg instanceof UnionPtg) {
+                        edgeType = EdgeType.SETOPERATION;
+                    } else {
+                        if (ptg instanceof AttrPtg) {
+                            edgeType = EdgeType.FUNCTION;
+                        } else {
+                            edgeType = EdgeType.OTHER;
+                        }
+                    }
+
+                    int count = 0;
+                    while (count < numberOfOperands && !precDeque.isEmpty()) {
+                        Ref popedRef = precDeque.pop();
+                        popedRef.setEdgeType(edgeType);
+                        precList.add(popedRef);
+                        count += 1;
+                    }
+                }
+            }
+
+            while (!precDeque.isEmpty()) {
+                Ref popedRef = precDeque.pop();
+                precList.add(popedRef);
             }
 
             if (!precList.isEmpty())

@@ -9,7 +9,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.dataspread.sheetanalyzer.dependency.util.*;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,6 +50,7 @@ public class DependencyGraphTACO implements DependencyGraph {
     private boolean inRowCompression = false;
     private boolean dollar_signed = false;
     private boolean isGap = true;
+    private boolean isTypeSensitive = false;
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
     private final DollarSignedCompressInfoComparator dollarSignedCompressInfoComparator =
@@ -61,41 +61,61 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     public Set<Ref> getDependents(Ref precedent) {
-        final boolean isDirectDep = false;
-        LinkedHashSet<Ref> result = new LinkedHashSet<>();
-
-        if (RefUtils.isValidRef(precedent)) getDependentsInternal(precedent, result, isDirectDep);
-        return result;
+        Set<Ref> results = new HashSet<>();
+        HashMap<Ref, Set<Ref>> internalResults = getDependents(precedent, false);
+        for (Ref ref: internalResults.keySet()) {
+            results.addAll(internalResults.get(ref));
+        }
+        return results;
     }
 
-    private void getDependentsInternal(Ref precUpdate,
-                                       LinkedHashSet<Ref> result,
-                                       boolean isDirectDep) {
+    public HashMap<Ref, Set<Ref>> getDependents(Ref precedent, boolean isDirectDep) {
+        HashMap<Ref, Set<Ref>> results = new HashMap<>();
+        if (RefUtils.isValidRef(precedent)) {
+            results = getDependentsInternal(precedent, isDirectDep);
+        }
+        return results;
+    }
+
+    private HashMap<Ref, Set<Ref>> getDependentsInternal(Ref precedent, boolean isDirectDep) {
+        HashMap<Ref, Set<Ref>> results = new HashMap<>();
         AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
         Queue<Ref> updateQueue = new LinkedList<>();
-        updateQueue.add(precUpdate);
-
+        updateQueue.add(precedent);
         while (!updateQueue.isEmpty()) {
             Ref updateRef = updateQueue.remove();
             Iterator<Ref> refIter = findOverlappingRefs(updateRef);
-            Set<Ref> usedPrec = new HashSet<>();
+            Set<Ref> visited = new HashSet<>();
             while (refIter.hasNext()) {
                 Ref precRef = refIter.next();
-                if (!usedPrec.contains(precRef)) {
-                    usedPrec.add(precRef);
+                if (!visited.contains(precRef)) {
+                    visited.add(precRef);
                     Ref realUpdateRef = updateRef.getOverlap(precRef);
                     findDeps(precRef).forEach(depRefWithMeta -> {
                         Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                                 depRefWithMeta.getEdgeMeta(), realUpdateRef);
-                        depUpdateRefSet.forEach(depUpdateRef -> {
-                                updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
-                        });
+                        for (Ref depRef: depUpdateRefSet) {
+                            LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depRef);
+                            Set<Ref> tempResults = new HashSet<>();
+                            for (Ref olRef: overlapRef) {
+                                resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
+                                tempResults.add(olRef);
+                                if (!isDirectDep) {
+                                    updateQueue.add(olRef);
+                                }
+                            }
+                            Set<Ref> oldResults = results.getOrDefault(realUpdateRef, new HashSet<>());
+                            oldResults.addAll(tempResults);
+                            results.put(realUpdateRef, oldResults);
+                        }
                     });
                 }
             }
         }
+        return results;
     }
 
+    /*
     private void updateResult(LinkedHashSet<Ref> result, boolean isDirectDep, AtomicReference<RTree<Ref, Rectangle>> resultSet, Queue<Ref> updateQueue, Ref depUpdateRef) {
         LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
         overlapRef.forEach(olRef -> {
@@ -104,38 +124,59 @@ public class DependencyGraphTACO implements DependencyGraph {
             if (!isDirectDep) updateQueue.add(olRef);
         });
     }
+     */
 
     public Set<Ref> getPrecedents(Ref dependent) {
-        final boolean isDirectDep = false;
-        LinkedHashSet<Ref> result = new LinkedHashSet<>();
-
-        if (RefUtils.isValidRef(dependent)) getPrecedentInternal(dependent, result, isDirectDep);
-        return result;
+        Set<Ref> results = new HashSet<>();
+        HashMap<Ref, Set<Ref>> internalResults = getPrecedents(dependent, false);
+        for (Ref ref: internalResults.keySet()) {
+            results.addAll(internalResults.get(ref));
+        }
+        return results;
     }
 
-    private void getPrecedentInternal(Ref depUpdate,
-                                       LinkedHashSet<Ref> result,
-                                       boolean isDirectPrec) {
+    public HashMap<Ref, Set<Ref>> getPrecedents(Ref dependent, boolean isDirectPrec) {
+        HashMap<Ref, Set<Ref>> results = new HashMap<>();
+        if (RefUtils.isValidRef(dependent)) {
+            results = getPrecedentsInternal(dependent, isDirectPrec);
+        }
+        return results;
+    }
+
+    private HashMap<Ref, Set<Ref>> getPrecedentsInternal(Ref dependent, boolean isDirectPrec) {
+        HashMap<Ref, Set<Ref>> results = new HashMap<>();
         AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
         Queue<Ref> updateQueue = new LinkedList<>();
-        updateQueue.add(depUpdate);
+        updateQueue.add(dependent);
         while (!updateQueue.isEmpty()) {
             Ref updateRef = updateQueue.remove();
             Iterator<Ref> refIter = findOverlappingRefs(updateRef);
-            Set<Ref> usedDep = new HashSet<>();
+            Set<Ref> visited = new HashSet<>();
             while (refIter.hasNext()) {
                 Ref depRef = refIter.next();
-                if (!usedDep.contains(depRef)) {
-                    usedDep.add(depRef);
+                if (!visited.contains(depRef)) {
+                    visited.add(depRef);
                     Ref realUpdateRef = updateRef.getOverlap(depRef);
                     findPrecs(depRef).forEach(precRefWithMeta -> {
                         Ref precUpdateRef = findUpdatePrecRef(depRef, precRefWithMeta.getRef(),
                                 precRefWithMeta.getEdgeMeta(), realUpdateRef, isDirectPrec);
-                        updateResult(result, isDirectPrec, resultSet, updateQueue, precUpdateRef);
+                        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), precUpdateRef);
+                        Set<Ref> tempResults = new HashSet<>();
+                        for (Ref olRef: overlapRef) {
+                            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
+                            tempResults.add(olRef);
+                            if (!isDirectPrec) {
+                                updateQueue.add(olRef);
+                            }
+                        }
+                        Set<Ref> oldResults = results.getOrDefault(realUpdateRef, new HashSet<>());
+                        oldResults.addAll(tempResults);
+                        results.put(realUpdateRef, oldResults);
                     });
                 }
             }
         }
+        return results;
     }
 
     private Boolean isContained(RTree<Ref, Rectangle> resultSet, Ref input) {
@@ -418,13 +459,21 @@ public class DependencyGraphTACO implements DependencyGraph {
         this.isGap = isGap;
     }
 
+    public void setIsTypeSensitive(boolean isTypeSensitive) {
+        this.isTypeSensitive = isTypeSensitive;
+    }
+
     private void updateOneCompressEntry(CompressInfo selectedInfo) {
         if (selectedInfo.isDuplicate) return;
+        EdgeType type = selectedInfo.candPrec.getEdgeType();
         deleteMemEntry(selectedInfo.candPrec, selectedInfo.candDep, selectedInfo.edgeMeta);
 
         Ref newPrec = selectedInfo.prec.getBoundingBox(selectedInfo.candPrec);
         Ref newDep = selectedInfo.dep.getBoundingBox(selectedInfo.candDep);
         Pair<Offset, Offset> offsetPair = computeOffset(newPrec, newDep, selectedInfo.compType);
+        if (this.isTypeSensitive) {
+            newPrec.setEdgeType(type);
+        }
         insertMemEntry(newPrec, newDep, new EdgeMeta(selectedInfo.compType, offsetPair.first, offsetPair.second));
     }
 
@@ -714,6 +763,9 @@ public class DependencyGraphTACO implements DependencyGraph {
         }
 
         Ref lastCandPrec = findLastPrec(candPrec, candDep, metaData, direction);
+        if (this.isTypeSensitive) {
+            lastCandPrec.setEdgeType(candPrec.getEdgeType());
+        }
         PatternType compressType =
                 findCompPatternHelper(direction, prec, dep, candPrec, candDep, lastCandPrec);
         PatternType retCompType = PatternType.NOTYPE;
@@ -803,6 +855,15 @@ public class DependencyGraphTACO implements DependencyGraph {
                 compressType = PatternType.TYPEFOUR;
         }
 
+        // ADD: check EdgeType
+        if (compressType != PatternType.NOTYPE) {
+            if (this.isTypeSensitive) {
+                if (lastCandPrec.getEdgeType() != prec.getEdgeType()) {
+                    compressType = PatternType.NOTYPE;
+                }
+            }
+        }
+
         return compressType;
     }
 
@@ -880,7 +941,6 @@ public class DependencyGraphTACO implements DependencyGraph {
     }
 
     private class CompressInfoComparator implements Comparator<CompressInfo> {
-
         @Override
         public int compare(CompressInfo infoA, CompressInfo infoB) {
             if (infoA.isDuplicate) return -1;
