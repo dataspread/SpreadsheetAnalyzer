@@ -16,6 +16,8 @@ public class SheetData {
     private final Map<Ref, CellWithMeta> refMetadata = new HashMap<>();
     private final Set<Ref> accessAreaCache = new HashSet<>();
     private final String sheetName;
+    private int _maxRow;
+    private int _maxCol;
 
     public SheetData(String sheetName) {
         this.sheetName = sheetName;
@@ -94,6 +96,22 @@ public class SheetData {
 
     public String getSheetName() {
         return this.sheetName;
+    }
+
+    public int getMaxRow() {
+        return this._maxRow;
+    }
+
+    public int getMaxCol() {
+        return this._maxCol;
+    }
+
+    public void setMaxRow(int maxRow) {
+        this._maxRow = maxRow;
+    }
+
+    public void setMaxCol(int maxCol) {
+        this._maxCol = maxCol;
     }
 
     // Notice that in the following methods we return a copy

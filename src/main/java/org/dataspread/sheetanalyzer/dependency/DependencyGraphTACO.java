@@ -6,9 +6,12 @@ import com.github.davidmoten.rtree.geometry.Rectangle;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.dataspread.sheetanalyzer.data.CellContent;
+import org.dataspread.sheetanalyzer.data.SheetData;
 import org.dataspread.sheetanalyzer.dependency.util.*;
 import org.dataspread.sheetanalyzer.util.Pair;
 import org.dataspread.sheetanalyzer.util.Ref;
+import org.dataspread.sheetanalyzer.util.RefImpl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,6 +24,7 @@ public class DependencyGraphTACO implements DependencyGraph {
     protected Map<Ref, List<RefWithMeta>> precToDepList = new HashMap<>();
     protected Map<Ref, List<RefWithMeta>> depToPrecList = new HashMap<>();
     private RTree<Ref, Rectangle> _rectToRef = RTree.create();
+    private Set<Ref> _visitedRefs = new HashSet<>();
 
     private final CompressInfoComparator compressInfoComparator = new CompressInfoComparator();
 
@@ -53,16 +57,53 @@ public class DependencyGraphTACO implements DependencyGraph {
                     Set<Ref> depUpdateRefSet = findUpdateDepRef(precRef, depRefWithMeta.getRef(),
                             depRefWithMeta.getEdgeMeta(), realUpdateRef);
                     depUpdateRefSet.forEach(depUpdateRef -> {
-                        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
-                        overlapRef.forEach(olRef -> {
-                            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
-                            result.add(olRef);
-                            if (!isDirectDep) {
-                                updateQueue.add(olRef);
-                            }
-                        });
+                        updateResult(result, isDirectDep, resultSet, updateQueue, depUpdateRef);
                     });
                 });
+            }
+        }
+    }
+
+    private void updateResult(LinkedHashSet<Ref> result, boolean isDirectDep,
+            AtomicReference<RTree<Ref, Rectangle>> resultSet, Queue<Ref> updateQueue, Ref depUpdateRef) {
+        LinkedList<Ref> overlapRef = getNonOverlapRef(resultSet.get(), depUpdateRef);
+        overlapRef.forEach(olRef -> {
+            resultSet.set(resultSet.get().add(olRef, RefUtils.refToRect(olRef)));
+            result.add(olRef);
+            if (!isDirectDep)
+                updateQueue.add(olRef);
+        });
+    }
+
+    public Set<Ref> getPrecedents(Ref dependent) {
+        final boolean isDirectDep = false;
+        LinkedHashSet<Ref> result = new LinkedHashSet<>();
+
+        if (RefUtils.isValidRef(dependent))
+            getPrecedentInternal(dependent, result, isDirectDep);
+        return result;
+    }
+
+    private void getPrecedentInternal(Ref depUpdate,
+            LinkedHashSet<Ref> result,
+            boolean isDirectPrec) {
+        AtomicReference<RTree<Ref, Rectangle>> resultSet = new AtomicReference<>(RTree.create());
+        Queue<Ref> updateQueue = new LinkedList<>();
+        updateQueue.add(depUpdate);
+        while (!updateQueue.isEmpty()) {
+            Ref updateRef = updateQueue.remove();
+            Iterator<Ref> refIter = findOverlappingRefs(updateRef);
+            while (refIter.hasNext()) {
+                Ref depRef = refIter.next();
+                Ref realUpdateRef = updateRef.getOverlap(depRef);
+                for (RefWithMeta precRefWithMeta : findPrecs(depRef)) {
+                    Ref precUpdateRef = findUpdatePrecRef(depRef, precRefWithMeta.getRef(),
+                            precRefWithMeta.getEdgeMeta(), realUpdateRef, isDirectPrec);
+                    if (precUpdateRef != null) {
+
+                        updateResult(result, isDirectPrec, resultSet, updateQueue, precUpdateRef);
+                    }
+                }
             }
         }
     }
@@ -79,6 +120,73 @@ public class DependencyGraphTACO implements DependencyGraph {
             }
         });
         return retRefList;
+    }
+
+    public void pruneOverlappingRefs(SheetData sheetData) {
+        for (int i = 0; i <= sheetData.getMaxCol(); i++) {
+            for (int j = 0; j < sheetData.getMaxRow(); j++) {
+                Ref ref = new RefImpl(j, i);
+                CellContent cellContent = sheetData.getCellContent(ref);
+                if (_visitedRefs.contains(ref) || !cellContent.isFormula()) {
+                    continue;
+                }
+                findMaxOverlapRange(i, j, Direction.TODOWN, sheetData);
+                findMaxOverlapRange(i, j, Direction.TORIGHT, sheetData);
+            }
+        }
+    }
+
+    private void findMaxOverlapRange(int col, int row, Direction direction, SheetData sheetData) {
+        Set<Ref> overlappingTargetRefs = new HashSet<>();
+        Ref targetRef = new RefImpl(row, col);
+        findOverlappingRefs(targetRef).forEachRemaining(overlappingTargetRefs::add);
+        if (direction != Direction.TODOWN && direction != Direction.TORIGHT) {
+            throw new IllegalArgumentException("Direction must be either TODOWN or TORIGHT");
+        }
+        boolean isDown = direction == Direction.TODOWN;
+        int start = (isDown ? row : col) + 1;
+        int max = isDown ? sheetData.getMaxRow() : sheetData.getMaxCol();
+        for (int i = start; i < max; i++) {
+            Ref currentRef = new RefImpl(isDown ? i : row, isDown ? col : i);
+            CellContent cellContent = sheetData.getCellContent(currentRef);
+            if (!cellContent.isFormula()) {
+                break;
+            }
+            Set<Ref> overlappingCurrentRefs = new HashSet<>();
+            findOverlappingRefs(currentRef).forEachRemaining(overlappingCurrentRefs::add);
+            if (!overlappingTargetRefs.equals(overlappingCurrentRefs)) {
+                // overlappingTargetRefs.retainAll(overlappingCurrentRefs);
+                overlappingCurrentRefs.retainAll(overlappingTargetRefs);
+                for (Ref overlappingTargetRef : overlappingCurrentRefs) {
+                    // for (Ref overlappingTargetRef : overlappingTargetRefs) {
+                    Set<RefWithMeta> precedents = new HashSet<>();
+                    findPrecs(overlappingTargetRef).forEach(precedents::add);
+                    for (RefWithMeta precRangeWithMeta : precedents) {
+                        Ref precRef = precRangeWithMeta.getRef();
+                        EdgeMeta edgeMeta = precRangeWithMeta.getEdgeMeta();
+                        List<Pair<Ref, RefWithMeta>> newEdges = deleteOneCell(precRef,
+                                overlappingTargetRef,
+                                edgeMeta,
+                                targetRef);
+                        deleteMemEntry(precRef, overlappingTargetRef, edgeMeta);
+                        Ref deletedRef = new RefImpl(precRef.getRow(), precRef.getColumn());
+                        add(deletedRef, targetRef);
+                        newEdges.forEach(pair -> {
+                            Ref newPrec = pair.first;
+                            Ref newDep = pair.second.getRef();
+                            EdgeMeta newEdgeMeta = pair.second.getEdgeMeta();
+                            if (newDep.getType() == Ref.RefType.CELL) {
+                                add(newPrec, newDep);
+                            } else {
+                                insertMemEntry(newPrec, newDep, newEdgeMeta);
+                            }
+                        });
+                    }
+                }
+            } else {
+                _visitedRefs.add(currentRef);
+            }
+        }
     }
 
     public long getNumEdges() {
