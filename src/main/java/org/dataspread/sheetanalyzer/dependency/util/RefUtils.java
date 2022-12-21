@@ -39,12 +39,10 @@ public class RefUtils {
     }
 
     public static Ref fromStringToCell(String cellStr) {
-        String[] content = cellStr.split(":");
-        String rowAndColumn = content[1];
         StringBuilder rowStr = new StringBuilder();
         StringBuilder colStr = new StringBuilder();
-        for (int i = 0; i < rowAndColumn.length(); i++) {
-            char s = rowAndColumn.charAt(i);
+        for (int i = 0; i < cellStr.length(); i++) {
+            char s = cellStr.charAt(i);
             if (Character.isDigit(s)) {
                 rowStr.append(s);
             } else {

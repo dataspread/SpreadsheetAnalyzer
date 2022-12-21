@@ -1,23 +1,27 @@
 package org.dataspread.sheetanalyzer;
 
-import org.dataspread.sheetanalyzer.dependency.DependencyGraph;
-import org.dataspread.sheetanalyzer.dependency.DependencyGraphAntifreeze;
-import org.dataspread.sheetanalyzer.dependency.DependencyGraphNoComp;
-import org.dataspread.sheetanalyzer.dependency.DependencyGraphTACO;
+import org.dataspread.sheetanalyzer.dependency.*;
+import org.dataspread.sheetanalyzer.dependency.util.RedisGraphConstants;
 import org.dataspread.sheetanalyzer.dependency.util.RefWithMeta;
 import org.dataspread.sheetanalyzer.parser.POIParser;
 import org.dataspread.sheetanalyzer.parser.SpreadsheetParser;
 import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 import org.dataspread.sheetanalyzer.util.*;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import java.io.File;
+
 public class SheetAnalyzer {
     private final SpreadsheetParser parser;
     private final String fileName;
+    private final String dirName;
     private final HashMap<String, SheetData> sheetDataMap;
     private final HashMap<String, DependencyGraph> depGraphMap;
     private final boolean inRowCompression;
@@ -49,6 +53,7 @@ public class SheetAnalyzer {
                          boolean inRowCompression, DepGraphType depGraphType, boolean isDollar, boolean isGap) throws SheetNotSupportedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
+        dirName = parser.getDirName();
 
         // All sheet data stored <string, sheetdata>
         sheetDataMap = parser.getSheetData();
@@ -143,6 +148,88 @@ public class SheetAnalyzer {
             inputDepGraphMap.put(sheetName, depGraph);
             numVertices += refSet.size();
         });
+    }
+
+
+    private void genRedisGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
+        sheetDataMap.forEach((sheetName, sheetData) -> {
+            DependencyGraphRedis depGraph = new DependencyGraphRedis();
+            HashSet<Ref> refSet = new HashSet<>();
+            PrintWriter nodePW = null;
+            PrintWriter relationPW = null;
+            File nodeFile = null;
+            File relFile = null;
+            try {
+                nodeFile = new File(dirName, RedisGraphConstants.nodeFile);
+                relFile = new File(dirName, RedisGraphConstants.relFile);
+                nodePW = new PrintWriter(nodeFile);
+                relationPW = new PrintWriter(relFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+
+            HashSet<Ref> cellSet = new HashSet<>();
+
+            nodePW.println(RedisGraphConstants.cellAttr);
+            relationPW.println(RedisGraphConstants.precAttr + "," + RedisGraphConstants.depAttr);
+
+            PrintWriter finalNodePW = nodePW;
+            PrintWriter finalRelationPW = relationPW;
+            sheetData.getDepPairs().forEach(depPair -> {
+                Ref dep = depPair.first;
+                List<Ref> precList = depPair.second;
+                Set<Ref> visited = new HashSet<>();
+                precList.forEach(prec -> {
+                    if (!visited.contains(prec)) {
+                        generateCellWiseDependency(prec, dep,
+                                finalNodePW, finalRelationPW, cellSet);
+                        numEdges += 1;
+                        visited.add(prec);
+                    }
+                });
+                refSet.add(dep);
+                refSet.addAll(precList);
+
+            });
+
+            nodePW.close();
+            relationPW.close();
+            depGraph.bulkLoad(sheetName, nodeFile, relFile);
+
+            if (!nodeFile.delete()) {
+                System.out.println("Delete file failed");
+                System.exit(-1);
+            }
+            if (!relFile.delete()) {
+                System.out.println("Delete file failed");
+                System.exit(-1);
+            }
+
+            inputDepGraphMap.put(sheetName, depGraph);
+            numVertices += refSet.size();
+        });
+    }
+
+    private void generateCellWiseDependency(Ref prec, Ref dep,
+                                            PrintWriter nodePW, PrintWriter relationPW,
+                                            HashSet<Ref> cellSet) {
+        if (!cellSet.contains(dep)) {
+            cellSet.add(dep);
+            nodePW.println(dep);
+        }
+        for (int row = prec.getRow(); row <= prec.getLastRow(); row++) {
+            for (int col = prec.getColumn(); col <= prec.getLastColumn(); col++) {
+                Ref precCell = new RefImpl(row, col);
+                String oneLine = precCell + "," + dep;
+                relationPW.println(oneLine);
+
+                if (!cellSet.contains(precCell)) {
+                    cellSet.add(precCell);
+                    nodePW.println(precCell);
+                }
+            }
+        }
     }
 
     private boolean isInRowOnly(Pair<Ref, List<Ref>> depPair) {

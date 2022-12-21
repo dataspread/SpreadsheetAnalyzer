@@ -15,7 +15,6 @@ import org.dataspread.sheetanalyzer.util.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -25,10 +24,12 @@ public class POIParser implements SpreadsheetParser {
     private FormulaParsingWorkbook evalbook;
     private final HashMap<String, SheetData> sheetDataMap;
     private final String fileName;
+    private final String dirName;
 
     public POIParser(String filePath) throws SheetNotSupportedException {
         File fileItem = new File(filePath);
         fileName = fileItem.getName();
+        dirName = fileItem.getParent();
         sheetDataMap = new HashMap<>();
 
         try {
@@ -57,6 +58,10 @@ public class POIParser implements SpreadsheetParser {
 
     public String getFileName() {
         return fileName;
+    }
+
+    public String getDirName() {
+        return dirName;
     }
 
     public HashMap<String, SheetData> getSheetData() {

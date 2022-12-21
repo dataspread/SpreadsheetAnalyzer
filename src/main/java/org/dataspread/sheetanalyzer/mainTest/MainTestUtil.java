@@ -82,7 +82,7 @@ public class MainTestUtil {
         try {
             SheetAnalyzer sheetAnalyzer = new SheetAnalyzer(filePath, inRowCompression, depGraphType, isDollar, isGap);
             String sheetName = refLoc.split(":")[0];
-            Ref targetRef = RefUtils.fromStringToCell(refLoc);
+            Ref targetRef = RefUtils.fromStringToCell(refLoc.split(":")[1]);
             int origRow = targetRef.getRow();
             int origCol = targetRef.getColumn();
             DependencyGraph depGraph = sheetAnalyzer.getDependencyGraphs().get(sheetName);
@@ -130,7 +130,7 @@ public class MainTestUtil {
             statPW.write(stringBuilder.toString());
 
             String sheetName = refLoc.split(":")[0];
-            Ref targetRef = RefUtils.fromStringToCell(refLoc);
+            Ref targetRef = RefUtils.fromStringToCell(refLoc.split(":")[1]);
 
             Set<Ref> result, processedResult;
             long lookupSize = 0, lookupTime = 0, lookupPostSize = 0, lookupPostTime = 0;
@@ -266,7 +266,9 @@ public class MainTestUtil {
             return DepGraphType.TACO;
         else if (depGraphString.trim().compareToIgnoreCase("antifreeze") == 0)
             return DepGraphType.ANTIFREEZE;
-        else
+        else if (depGraphString.trim().compareToIgnoreCase("nocomp") == 0)
             return DepGraphType.NOCOMP;
+        else
+            return DepGraphType.REDISGRAPH;
     }
 }
