@@ -43,7 +43,7 @@ public class DependencyGraphRedis implements DependencyGraph {
         try {
             HashSet<Ref> resSet = new HashSet<>();
             String query = String.format("MATCH (prec:%s)-[:%s*]->(dep:%s)" +
-                    " WHERE prec.%s = %s RETURN dep",
+                    " WHERE prec.%s = %s RETURN DISTINCT dep",
                     RedisGraphConstants.nodeName,
                     RedisGraphConstants.relName,
                     RedisGraphConstants.nodeName,
