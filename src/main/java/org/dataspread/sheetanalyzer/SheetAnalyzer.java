@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,22 +36,26 @@ public class SheetAnalyzer {
     private final long maxUnChangeNumQueries = 10000;
     private long graphBuildTimeCost = 0;
 
-    public SheetAnalyzer(String filePath) throws SheetNotSupportedException {
+    public SheetAnalyzer(String filePath)
+            throws SheetNotSupportedException, RedisGraphFailedException {
         this(filePath, false, DepGraphType.TACO);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, DepGraphType depGraphType) throws SheetNotSupportedException {
+                         boolean inRowCompression, DepGraphType depGraphType)
+            throws SheetNotSupportedException, RedisGraphFailedException {
         this(filePath, inRowCompression, depGraphType, false, true);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar) throws SheetNotSupportedException {
+                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar)
+            throws SheetNotSupportedException, RedisGraphFailedException {
         this(filePath, inRowCompression, depGraphType, isDollar, true);
     }
 
     public SheetAnalyzer(String filePath,
-                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar, boolean isGap) throws SheetNotSupportedException {
+                         boolean inRowCompression, DepGraphType depGraphType, boolean isDollar, boolean isGap)
+            throws SheetNotSupportedException, RedisGraphFailedException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
         dirName = parser.getDirName();
@@ -64,7 +69,11 @@ public class SheetAnalyzer {
         depGraphMap = new HashMap<>();
 
         long start = System.currentTimeMillis();
-        genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
+        if (depGraphType == DepGraphType.REDISGRAPH) {
+            genRedisGraphFromSheetData(depGraphMap);
+        } else {
+            genDepGraphFromSheetData(depGraphMap, isDollar, isGap);
+        }
         long end = System.currentTimeMillis();
         graphBuildTimeCost = end - start;
     }
@@ -152,6 +161,8 @@ public class SheetAnalyzer {
 
 
     private void genRedisGraphFromSheetData(HashMap<String, DependencyGraph> inputDepGraphMap) {
+        String graphName = "Sheet";
+        AtomicInteger sheetNum = new AtomicInteger(1);
         sheetDataMap.forEach((sheetName, sheetData) -> {
             DependencyGraphRedis depGraph = new DependencyGraphRedis();
             HashSet<Ref> refSet = new HashSet<>();
@@ -180,10 +191,11 @@ public class SheetAnalyzer {
                 Ref dep = depPair.first;
                 List<Ref> precList = depPair.second;
                 Set<Ref> visited = new HashSet<>();
+                Set<Ref> precSet = new HashSet<>();
                 precList.forEach(prec -> {
                     if (!visited.contains(prec)) {
                         generateCellWiseDependency(prec, dep,
-                                finalNodePW, finalRelationPW, cellSet);
+                                finalNodePW, finalRelationPW, cellSet, precSet);
                         numEdges += 1;
                         visited.add(prec);
                     }
@@ -195,7 +207,9 @@ public class SheetAnalyzer {
 
             nodePW.close();
             relationPW.close();
-            depGraph.bulkLoad(sheetName, nodeFile, relFile);
+            String thisGraphName = graphName + sheetNum.getAndIncrement();
+            if (!refSet.isEmpty())
+                depGraph.bulkLoad(thisGraphName, nodeFile, relFile);
 
             if (!nodeFile.delete()) {
                 System.out.println("Delete file failed");
@@ -213,7 +227,7 @@ public class SheetAnalyzer {
 
     private void generateCellWiseDependency(Ref prec, Ref dep,
                                             PrintWriter nodePW, PrintWriter relationPW,
-                                            HashSet<Ref> cellSet) {
+                                            Set<Ref> cellSet, Set<Ref> precSet) {
         if (!cellSet.contains(dep)) {
             cellSet.add(dep);
             nodePW.println(dep);
@@ -221,8 +235,11 @@ public class SheetAnalyzer {
         for (int row = prec.getRow(); row <= prec.getLastRow(); row++) {
             for (int col = prec.getColumn(); col <= prec.getLastColumn(); col++) {
                 Ref precCell = new RefImpl(row, col);
-                String oneLine = precCell + "," + dep;
-                relationPW.println(oneLine);
+                if (!precSet.contains(precCell)) {
+                    String oneLine = precCell + "," + dep;
+                    relationPW.println(oneLine);
+                    precSet.add(precCell);
+                }
 
                 if (!cellSet.contains(precCell)) {
                     cellSet.add(precCell);
@@ -464,6 +481,15 @@ public class SheetAnalyzer {
 
     public int getNumSheets() {
         return sheetDataMap.size();
+    }
+
+    public void cleanup() {
+        depGraphMap.forEach((String sheetName, DependencyGraph dependencyGraph) -> {
+            if (dependencyGraph instanceof DependencyGraphRedis) {
+                DependencyGraphRedis dependencyGraphRedis = (DependencyGraphRedis) dependencyGraph;
+                dependencyGraphRedis.clearGraph();
+            }
+        });
     }
 
 }

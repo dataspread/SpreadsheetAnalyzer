@@ -20,7 +20,7 @@ public class DepRefTest {
                     "4) Spreadsheets directory \n" +
                     "5) Spreadsheet file to test ('all' for all files in dir) \n" +
                     "6) 'M'/'m' for mostDep and 'L'/'l' for longestDep \n" +
-                    "7) TACO or NoComp or Antifreeze \n" +
+                    "7) TACO or NoComp or Antifreeze or RedisGraph \n" +
                     "8) isGap True or False \n";
             System.out.println(warnings);
             System.exit(-1);
@@ -171,7 +171,8 @@ public class DepRefTest {
             return false;
         }
 
-        if (!(args[6].equals("TACO") || args[6].equals("NoComp") || args[6].equals("Antifreeze"))) {
+        if (!(args[6].equals("TACO") || args[6].equals("NoComp")
+                || args[6].equals("Antifreeze") || args[6].equals("RedisGraph"))) {
             System.out.println("Wrong model type!");
             return false;
         }

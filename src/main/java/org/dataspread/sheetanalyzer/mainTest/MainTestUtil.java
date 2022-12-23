@@ -15,6 +15,8 @@ import java.util.*;
 
 public class MainTestUtil {
 
+    public static String defaultResult = "600000";
+
     public static void writePerSheetStat(SheetAnalyzer sheetAnalyzer,
                                          PrintWriter statPW,
                                          boolean inRowCompression) {
@@ -110,7 +112,19 @@ public class MainTestUtil {
                     .append(graphModifyTimeCost).append("\n");
             statPW.write(stringBuilder.toString());
 
+            sheetAnalyzer.cleanup();
+
         } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
+            System.out.println(e.getMessage());
+        } catch (RedisGraphFailedException e) {
+            String stringBuilder = fileName + "," +
+                    refLoc + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "\n";
+            statPW.write(stringBuilder);
             System.out.println(e.getMessage());
         }
     }
@@ -127,7 +141,6 @@ public class MainTestUtil {
             stringBuilder.append(fileName).append(",")
                     .append(refLoc).append(",")
                     .append(graphBuildTime).append(",");
-            statPW.write(stringBuilder.toString());
 
             String sheetName = refLoc.split(":")[0];
             Ref targetRef = RefUtils.fromStringToCell(refLoc.split(":")[1]);
@@ -145,13 +158,24 @@ public class MainTestUtil {
             lookupPostSize = processedResult.size();
             lookupPostTime = System.currentTimeMillis() - start;
 
-            stringBuilder = new StringBuilder();
             stringBuilder.append(lookupSize).append(",")
                     .append(lookupTime).append(",")
                     .append(lookupPostSize).append(",")
                     .append(lookupPostTime).append("\n");
             statPW.write(stringBuilder.toString());
+
+            sheetAnalyzer.cleanup();
         } catch (SheetNotSupportedException | OutOfMemoryError | NullPointerException e) {
+            System.out.println(e.getMessage());
+        } catch (RedisGraphFailedException e) {
+            String stringBuilder = fileName + "," +
+                    refLoc + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "," +
+                    defaultResult + "\n";
+            statPW.write(stringBuilder);
             System.out.println(e.getMessage());
         }
     }
@@ -250,6 +274,8 @@ public class MainTestUtil {
                 statPW.write(stringBuilder.toString());
             }
         } catch (SheetNotSupportedException | OutOfMemoryError e) {
+            System.out.println(e.getMessage());
+        } catch (RedisGraphFailedException e) {
             System.out.println(e.getMessage());
         }
     }
