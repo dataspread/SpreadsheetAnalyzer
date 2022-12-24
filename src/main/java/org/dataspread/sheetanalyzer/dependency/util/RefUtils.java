@@ -51,7 +51,7 @@ public class RefUtils {
         }
 
         String col = colStr.toString();
-        int rowIdx = Integer.parseInt(rowStr.toString()) - 1;
+        long rowIdx = Long.parseLong(rowStr.toString()) - 1;
 
         int colIdx = 0;
         char[] colChars = col.toLowerCase().toCharArray();
@@ -59,7 +59,7 @@ public class RefUtils {
             colIdx += (colChars[i] - 'a' + 1) * Math.pow(26, colChars.length - i - 1);
         }
         colIdx -= 1;
-        return new RefImpl(rowIdx, colIdx);
+        return new RefImpl((int)rowIdx, colIdx);
     }
 
     public static Set<Ref> postProcessRefSet(Set<Ref> result) {
