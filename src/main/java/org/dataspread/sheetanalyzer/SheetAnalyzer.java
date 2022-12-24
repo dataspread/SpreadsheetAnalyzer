@@ -37,25 +37,25 @@ public class SheetAnalyzer {
     private long graphBuildTimeCost = 0;
 
     public SheetAnalyzer(String filePath)
-            throws SheetNotSupportedException, RedisGraphFailedException {
+            throws SheetNotSupportedException, RedisGraphLoadingException {
         this(filePath, false, DepGraphType.TACO);
     }
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression, DepGraphType depGraphType)
-            throws SheetNotSupportedException, RedisGraphFailedException {
+            throws SheetNotSupportedException, RedisGraphLoadingException {
         this(filePath, inRowCompression, depGraphType, false, true);
     }
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression, DepGraphType depGraphType, boolean isDollar)
-            throws SheetNotSupportedException, RedisGraphFailedException {
+            throws SheetNotSupportedException, RedisGraphLoadingException {
         this(filePath, inRowCompression, depGraphType, isDollar, true);
     }
 
     public SheetAnalyzer(String filePath,
                          boolean inRowCompression, DepGraphType depGraphType, boolean isDollar, boolean isGap)
-            throws SheetNotSupportedException, RedisGraphFailedException {
+            throws SheetNotSupportedException, RedisGraphLoadingException {
         parser = new POIParser(filePath);
         fileName = parser.getFileName();
         dirName = parser.getDirName();

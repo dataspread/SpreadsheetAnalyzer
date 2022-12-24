@@ -7,16 +7,14 @@ import com.redislabs.redisgraph.impl.api.RedisGraph;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.dataspread.sheetanalyzer.dependency.util.RedisGraphConstants;
 import org.dataspread.sheetanalyzer.dependency.util.RefUtils;
-import org.dataspread.sheetanalyzer.util.Pair;
-import org.dataspread.sheetanalyzer.util.RedisGraphFailedException;
-import org.dataspread.sheetanalyzer.util.Ref;
-import org.dataspread.sheetanalyzer.util.RefImpl;
+import org.dataspread.sheetanalyzer.util.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -57,7 +55,7 @@ public class DependencyGraphRedis implements DependencyGraph {
             }
             return resSet;
         } catch (JedisDataException | JedisConnectionException e) {
-           throw new RedisGraphFailedException("Query timeout");
+           throw new RedisGraphQueryException("Query timeout");
         }
     }
 
@@ -87,11 +85,15 @@ public class DependencyGraphRedis implements DependencyGraph {
 
     @Override
     public void clearDependents(Ref dep) {
-        String query = String.format("MATCH (dep:%s {%s: %s}) DETACH DELETE dep",
-                RedisGraphConstants.nodeName,
-                RedisGraphConstants.cellAttr,
-                "'" + dep + "'");
-        redisGraph.query(graphName, query);
+        try {
+            String query = String.format("MATCH (dep:%s {%s: %s}) DETACH DELETE dep",
+                    RedisGraphConstants.nodeName,
+                    RedisGraphConstants.cellAttr,
+                    "'" + dep + "'");
+            redisGraph.query(graphName, query);
+        } catch (JedisDataException | JedisConnectionException e) {
+            throw new RedisGraphQueryException("Clear dependents timeout");
+        }
     }
 
     @Override
@@ -130,14 +132,18 @@ public class DependencyGraphRedis implements DependencyGraph {
         pb.directory(new File(System.getProperty("user.home")));
         try {
             Process process = pb.start();
-            int exitVal = process.waitFor();
-            System.out.println("Bulk load result of " + graphName + " : " + exitVal);
-            if (exitVal != 0) {
-                throw new RedisGraphFailedException("Data loading failed");
+            process.waitFor(600, TimeUnit.SECONDS);
+            if (process.isAlive()) {
+                process.destroyForcibly();
+                throw new InterruptedException();
             }
+            int exitVal = process.exitValue();
+            if (exitVal != 0) {
+                throw new InterruptedException();
+            }
+            System.out.println("Bulk load success: " + graphName);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            System.exit(-1);
+            throw new RedisGraphLoadingException("Data loading failed");
         }
     }
 
