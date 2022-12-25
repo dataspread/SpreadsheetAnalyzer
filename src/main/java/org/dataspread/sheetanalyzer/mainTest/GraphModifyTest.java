@@ -4,6 +4,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.dataspread.sheetanalyzer.dependency.util.DepGraphType;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class GraphModifyTest {
@@ -42,12 +44,17 @@ public class GraphModifyTest {
         }
 
         int counter = 0;
+        boolean isHead = Files.notExists(Paths.get(outputPath));
+
         try (PrintWriter statPW = new PrintWriter(new FileWriter(outputPath, true))) {
             // Write header in output file
             String stringBuilder = "fileName" + "," +
                     targetColumn + "," +
                     "GraphModifyTime" + "\n";
-            statPW.write(stringBuilder);
+
+            if (isHead) {
+                statPW.write(stringBuilder);
+            }
 
             if (!targetFileName.equals("all")) {
                 if (fileNameDepRefMap.containsKey(targetFileName)) {
