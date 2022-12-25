@@ -107,6 +107,8 @@ public class MainTestUtil {
                 ((DependencyGraphAntifreeze) depGraph).rebuildCompGraph();
             long end = System.currentTimeMillis();
             long graphModifyTimeCost = end - start;
+             // if (depGraphType == DepGraphType.REDISGRAPH && graphModifyTimeCost >= 60000)
+             //     throw new RedisGraphQueryException("Modification Time Out");
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append(fileName).append(",")
@@ -121,10 +123,6 @@ public class MainTestUtil {
         } catch (RedisGraphLoadingException e) {
             String stringBuilder = fileName + "," +
                     refLoc + "," +
-                    defaultLoadingResult + "," +
-                    defaultLoadingResult + "," +
-                    defaultLoadingResult + "," +
-                    defaultLoadingResult + "," +
                     defaultLoadingResult + "\n";
             statPW.write(stringBuilder);
             System.out.println(e.getMessage());
@@ -135,9 +133,6 @@ public class MainTestUtil {
             String stringBuilder = fileName + "," +
                     refLoc + "," +
                     graphBuildTime + "," +
-                    defaultQueryingResult + "," +
-                    defaultQueryingResult + "," +
-                    defaultQueryingResult + "," +
                     defaultQueryingResult + "\n";
             statPW.write(stringBuilder);
             System.out.println(e.getMessage());
