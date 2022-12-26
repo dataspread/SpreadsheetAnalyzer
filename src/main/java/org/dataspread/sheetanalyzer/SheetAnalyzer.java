@@ -124,8 +124,10 @@ public class SheetAnalyzer {
                 tacoGraph.setDoCompression(true);
             } else if (depGraphType == DepGraphType.NOCOMP) {
                 depGraph = new DependencyGraphNoComp();
-            } else {
+            } else if (depGraphType == DepGraphType.ANTIFREEZE) {
                 depGraph = new DependencyGraphAntifreeze();
+            } else {
+                depGraph = new DepencencyGraphCalc();
             }
 
             HashSet<Ref> refSet = new HashSet<>();

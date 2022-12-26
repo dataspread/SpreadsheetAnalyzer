@@ -154,7 +154,10 @@ public class GraphModifyTest {
             return false;
         }
 
-        if (!(args[5].equals("TACO") || args[5].equals("NoComp") || args[5].equals("Antifreeze") || args[5].equals("RedisGraph"))) {
+        if (!(args[5].equals("TACO") || args[5].equals("NoComp")
+                || args[5].equals("Antifreeze")
+                || args[5].equals("RedisGraph")
+                || args[5].equals("Calc"))) {
             System.out.println("Wrong model type!");
             return false;
         }

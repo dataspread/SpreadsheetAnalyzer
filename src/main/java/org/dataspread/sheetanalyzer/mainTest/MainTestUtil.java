@@ -200,6 +200,19 @@ public class MainTestUtil {
                     defaultQueryingResult + "\n";
             statPW.write(stringBuilder);
             System.out.println(e.getMessage());
+        } catch (CalcQueryException e) {
+            long graphBuildTime = 0;
+            if (sheetAnalyzer != null)
+                graphBuildTime = sheetAnalyzer.getGraphBuildTimeCost();
+            String stringBuilder = fileName + "," +
+                    refLoc + "," +
+                    graphBuildTime + "," +
+                    defaultLoadingResult + "," +
+                    defaultLoadingResult + "," +
+                    defaultLoadingResult + "," +
+                    defaultLoadingResult + "\n";
+            statPW.write(stringBuilder);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -317,6 +330,8 @@ public class MainTestUtil {
             return DepGraphType.ANTIFREEZE;
         else if (depGraphString.trim().compareToIgnoreCase("nocomp") == 0)
             return DepGraphType.NOCOMP;
+        else if (depGraphString.trim().compareToIgnoreCase("calc") == 0)
+            return DepGraphType.CALC;
         else
             return DepGraphType.REDISGRAPH;
     }

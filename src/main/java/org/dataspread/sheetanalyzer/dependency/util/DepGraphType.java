@@ -4,5 +4,6 @@ public enum DepGraphType {
     TACO,
     NOCOMP,
     ANTIFREEZE,
-    REDISGRAPH
+    REDISGRAPH,
+    CALC
 }

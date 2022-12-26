@@ -172,7 +172,8 @@ public class DepRefTest {
         }
 
         if (!(args[6].equals("TACO") || args[6].equals("NoComp")
-                || args[6].equals("Antifreeze") || args[6].equals("RedisGraph"))) {
+                || args[6].equals("Antifreeze") || args[6].equals("RedisGraph")
+                || args[6].equals("Calc"))) {
             System.out.println("Wrong model type!");
             return false;
         }
