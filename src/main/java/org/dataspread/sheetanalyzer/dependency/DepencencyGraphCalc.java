@@ -18,7 +18,7 @@ public class DepencencyGraphCalc implements DependencyGraph {
     protected HashMap<Ref, Set<Ref>> precToDepSet = new HashMap<>();
     protected HashMap<Ref, Set<Ref>> depToPrecSet = new HashMap<>();
     private final CalcRefManager _refManager = new CalcRefManager();
-    private long timeOut = 60000;
+    private long timeOut = 600000;
 
     public Set<Ref> getDependents(Ref precedent) {
         LinkedHashSet<Ref> result = new LinkedHashSet<>();
