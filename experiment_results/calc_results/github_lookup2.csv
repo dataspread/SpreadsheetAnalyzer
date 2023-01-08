@@ -7,5 +7,5 @@ VT_EUReg_IND_V1p7.xlsx,IAL ICU INF:F193,864,7326,9231,7326,9267
 standard_deviation_full.xlsx,Sheet1:AA2,167,23040,6671,23040,6702
 Binno test Status Nov01_2018.xlsx,Test_worksheet:B104,148,23484,25868,23484,25895
 Signals.xlsx,Signal Verification0:H3,137,15983,33836,15983,33855
-rcv_ep2.xlsx,Signal Verification0:H3,-1,-1,-1,-1,-1
-teeeest.xlsx ,Signal Verification0:H3,-1,-1,-1,-1,-1
+rcv_ep2.xlsx,Signal Verification0:H3,300000,300000,300000,300000,300000
+teeeest.xlsx,Signal Verification0:H3,300000,300000,300000,300000,300000
