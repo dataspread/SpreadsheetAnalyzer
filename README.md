@@ -8,7 +8,7 @@ SheetAnalyzer is a library for spreadsheet's formula dependency management. This
 
 ## Results
 - [experiment_results](https://github.com/dataspread/sheetanalyzer/tree/taco_icde/experiment_results) contains the experimental results we showed in paper.
-- A [Jupyter Notebook](https://github.com/dataspread/sheetanalyzer/blob/taco_icde/experiment_analysis.ipynb) is provided to analyze the results.
+- A [Jupyter Notebook](https://github.com/dataspread/sheetanalyzer/blob/taco_icde/result_analysis.ipynb) is provided to analyze the results.
 
 ## Usage
 - The main code for formula dependency management is [here](https://github.com/dataspread/sheetanalyzer/tree/taco_icde/src/main/java/org/dataspread/sheetanalyzer/dependency).
